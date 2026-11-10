@@ -1,4 +1,4 @@
-# VibeVPN — Современный VPN-клиент нового поколения для Windows
+# VibeVPN — Удобный VPN-клиент для Windows
 
 <div align="center">
 
@@ -13,7 +13,7 @@
 ![License](https://img.shields.io/badge/Лицензия-MIT-green.svg)
 ![i18n](https://img.shields.io/badge/Язык-RU%20%7C%20EN-blueviolet.svg)
 
-**Быстрый, легкий и стильный VPN-клиент для Windows с человеческим Split Tunneling для приложений, генератором Cloudflare WARP (AmneziaWG / MASQUE), мульти-импортом QR-кодов и мониторингом сетевых процессов в реальном времени.**
+**Простой и быстрый VPN-клиент для Windows с разделением трафика по приложениям (Split Tunneling), генератором WARP (AmneziaWG), импортом через QR-код и мониторингом соединений.**
 
 [Скачать последний релиз (.exe)](https://github.com/zalupacode228/vibe-vpn/releases) • [Возможности](#-основные-возможности) • [Сборка из исходников](#-сборка-из-исходников)
 

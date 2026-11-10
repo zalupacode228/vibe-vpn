@@ -1,4 +1,4 @@
-# VibeVPN — Modern Next-Gen Windows VPN Client
+# VibeVPN — Fast & Simple Windows VPN Client
 
 <div align="center">
 
@@ -9,11 +9,11 @@
 ![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011%20x64-0078D6?logo=windows&logoColor=white)
 ![Go](https://img.shields.io/badge/Go-1.23%2B-00ADD8?logo=go&logoColor=white)
 ![Wails](https://img.shields.io/badge/Wails-v2-DF0000?logo=wails&logoColor=white)
-![Sing-Box](https://img.shields.io/badge/Core-sing--box%201.11-FF6B00?logo=box&logoColor=white)
+![Sing-Box](https://img.shields.io/badge/Core-sing--box%201.14-FF6B00?logo=box&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![i18n](https://img.shields.io/badge/Language-RU%20%7C%20EN-blueviolet.svg)
 
-**A fast, lightweight, and modern Windows VPN client with per-application Split Tunneling, Cloudflare WARP (AmneziaWG / MASQUE), QR code scanning, and real-time process telemetry.**
+**A fast and lightweight Windows VPN client with per-application Split Tunneling, Cloudflare WARP (AmneziaWG / MASQUE), QR code import, and real-time process monitoring.**
 
 [Download Latest Release](https://github.com/zalupacode228/vibe-vpn/releases) • [Features](#-key-features) • [Building from Source](#-building-from-source)
 
