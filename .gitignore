@@ -1,0 +1,45 @@
+# Wails build output
+build/bin/
+*.exe~
+
+# Executables (ignore build artifacts, keep embedded core)
+*.exe
+!assets/core/sing-box.exe
+
+# Dynamic libraries (ignore local dlls, keep embedded wintun)
+*.dll
+!assets/core/wintun.dll
+*.so
+*.dylib
+
+# Node / Frontend dependencies & build artifacts
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Go artifacts
+*.test
+*.out
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editor caches
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs and runtime user configurations
+*.log
+data/
+user_nodes.json
+settings.json
