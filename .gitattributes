@@ -1,0 +1,5 @@
+# GitHub Linguist overrides
+# Treat frontend UI bundle and installer scripts as vendored assets
+# so Go is properly detected as the primary language of the repository.
+frontend/** linguist-vendored
+build/** linguist-vendored
