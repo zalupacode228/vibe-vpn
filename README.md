@@ -27,11 +27,11 @@
 
 | **Главный экран (Тёмный неоморфизм)** | **Серверы и Узлы (Категории и пинг)** |
 |:---:|:---:|
-| <img src="assets/screenshots/dashboard_en.png" width="420" alt="Dashboard"/> | <img src="assets/screenshots/nodes_en.png" width="420" alt="Nodes"/> |
+| <img src="assets/screenshots/dashboard_ru.png" width="420" alt="Dashboard"/> | <img src="assets/screenshots/nodes_ru.png" width="420" alt="Nodes"/> |
 
 | **Универсальный QR-сканер** | **Настройки и Язык (RU / EN)** |
 |:---:|:---:|
-| <img src="assets/screenshots/modal_qr_en.png" width="420" alt="QR Modal"/> | <img src="assets/screenshots/settings_ru.png" width="420" alt="Settings"/> |
+| <img src="assets/screenshots/modal_qr_ru.png" width="420" alt="QR Modal"/> | <img src="assets/screenshots/settings_ru.png" width="420" alt="Settings"/> |
 
 </div>
 
