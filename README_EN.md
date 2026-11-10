@@ -39,7 +39,7 @@
 
 ## ✨ Key Features
 
-- **⚡ Per-Application Split Tunneling (Человеческий сплит)**:
+- **⚡ Per-Application Split Tunneling**:
   - Full control over which `.exe` applications route through VPN vs direct connection.
   - Supports both **Whitelist** (proxy only selected apps) and **Blacklist** (proxy all except selected apps).
   - Automatically lists running Windows processes with real-time process icons and names.
