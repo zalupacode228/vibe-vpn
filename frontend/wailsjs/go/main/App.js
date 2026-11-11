@@ -190,3 +190,12 @@ export function ClearCoreLogs() {
   return window['go']['main']['App']['ClearCoreLogs']();
 }
 
+export function GenerateRandomHWID() {
+  return window['go']['main']['App']['GenerateRandomHWID']();
+}
+
+export function GetDefaultHWID() {
+  return window['go']['main']['App']['GetDefaultHWID']();
+}
+
+

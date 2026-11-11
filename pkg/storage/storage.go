@@ -57,6 +57,8 @@ func (s *Storage) LoadSettings() models.Settings {
 		TunMTU:         1400,
 		RemoteDNS:      "https://1.1.1.1/dns-query",
 		DirectDNS:      "local",
+		UserAgent:      "v2rayNG/1.8.5",
+		HWID:           GetMachineHWID(),
 	}
 
 	data, err := os.ReadFile(s.settingsPath)
@@ -80,6 +82,12 @@ func (s *Storage) LoadSettings() models.Settings {
 		} else {
 			loaded.MTU = 1400
 		}
+	}
+	if loaded.UserAgent == "" {
+		loaded.UserAgent = "v2rayNG/1.8.5"
+	}
+	if loaded.HWID == "" {
+		loaded.HWID = GetMachineHWID()
 	}
 	return loaded
 }
@@ -114,6 +122,8 @@ func (s *Storage) SaveSettings(settings models.Settings) error {
 	if settings.DirectDNS != "" {
 		existing["direct_dns"] = settings.DirectDNS
 	}
+	existing["user_agent"] = settings.UserAgent
+	existing["hwid"] = settings.HWID
 
 	data, err := json.MarshalIndent(existing, "", "  ")
 	if err != nil {

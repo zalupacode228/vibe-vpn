@@ -94,6 +94,8 @@ type Settings struct {
 	TunMTU         int          `json:"tun_mtu,omitempty"`
 	RemoteDNS      string       `json:"remote_dns,omitempty"`
 	DirectDNS      string       `json:"direct_dns,omitempty"`
+	UserAgent      string       `json:"user_agent,omitempty"`
+	HWID           string       `json:"hwid,omitempty"`
 }
 
 type ProcessInfo struct {
