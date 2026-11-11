@@ -36,7 +36,11 @@ import {
   RestartAsAdmin,
   CheckVPNConflicts,
   KillConflictingVPNs,
-  GetSystemLanguage
+  GetSystemLanguage,
+  SelectWarpConfigFile,
+  ImportWarpConfig,
+  GetCoreLogs,
+  ClearCoreLogs
 } from '../wailsjs/go/main/App';
 
 import {
@@ -669,6 +673,7 @@ btnPower.addEventListener('click', async () => {
     showToast(willConnect ? t('vpn_starting') : t('toast_vpn_disconnected'));
   } catch (err) {
     showToast(`Ошибка: ${err}`);
+    document.getElementById('btn-hero-logs')?.classList.add('has-error');
   } finally {
     btnPower.style.opacity = '1';
     btnPower.style.pointerEvents = 'auto';
@@ -1364,6 +1369,73 @@ const btnCancelWarp = document.getElementById('btn-cancel-warp');
 const optWarpAwg = document.getElementById('opt-warp-awg');
 const optWarpMasque = document.getElementById('opt-warp-masque');
 
+// WARP Subtabs & Import
+const tabWarpGen = document.getElementById('tab-warp-gen');
+const tabWarpImport = document.getElementById('tab-warp-import');
+const paneWarpGen = document.getElementById('pane-warp-gen');
+const paneWarpImport = document.getElementById('pane-warp-import');
+const btnWarpPickFile = document.getElementById('btn-warp-pick-file');
+const inputWarpConfText = document.getElementById('input-warp-conf-text');
+const inputWarpConfName = document.getElementById('input-warp-conf-name');
+const btnWarpImportSubmit = document.getElementById('btn-warp-import-submit');
+
+tabWarpGen?.addEventListener('click', () => {
+  tabWarpGen.classList.add('active');
+  tabWarpImport?.classList.remove('active');
+  if (paneWarpGen) paneWarpGen.style.display = 'block';
+  if (paneWarpImport) paneWarpImport.style.display = 'none';
+});
+
+tabWarpImport?.addEventListener('click', () => {
+  tabWarpImport?.classList.add('active');
+  tabWarpGen?.classList.remove('active');
+  if (paneWarpImport) paneWarpImport.style.display = 'block';
+  if (paneWarpGen) paneWarpGen.style.display = 'none';
+});
+
+btnWarpPickFile?.addEventListener('click', async () => {
+  try {
+    const res = await SelectWarpConfigFile();
+    if (res && res.content) {
+      if (inputWarpConfText) inputWarpConfText.value = res.content;
+      if (inputWarpConfName && (!inputWarpConfName.value || inputWarpConfName.value.trim() === '')) {
+        let n = res.file_name || '';
+        n = n.replace(/\.(conf|wireguard|txt)$/i, '');
+        inputWarpConfName.value = n || 'WARP Custom';
+      }
+      showToast(`Файл ${res.file_name || ''} загружен`);
+    }
+  } catch (err) {
+    showToast(`Ошибка выбора файла: ${err}`);
+  }
+});
+
+btnWarpImportSubmit?.addEventListener('click', async () => {
+  const text = inputWarpConfText?.value?.trim();
+  if (!text) {
+    showToast('Вставьте текст конфигурации или выберите файл .conf');
+    return;
+  }
+  const customName = inputWarpConfName?.value?.trim() || '';
+
+  btnWarpImportSubmit.style.opacity = '0.5';
+  btnWarpImportSubmit.style.pointerEvents = 'none';
+
+  try {
+    const node = await ImportWarpConfig(text, customName);
+    closeWarpModal();
+    showToast(t('warp_import_success', `Узел ${node.name} успешно импортирован!`));
+    if (inputWarpConfText) inputWarpConfText.value = '';
+    if (inputWarpConfName) inputWarpConfName.value = '';
+    await loadNodes();
+  } catch (err) {
+    showToast(`${t('warp_import_error', 'Ошибка импорта: ')}${err}`);
+  } finally {
+    btnWarpImportSubmit.style.opacity = '1';
+    btnWarpImportSubmit.style.pointerEvents = 'auto';
+  }
+});
+
 btnOpenWarp.addEventListener('click', () => {
   modalWarp.classList.add('open');
 });
@@ -1395,6 +1467,156 @@ async function handleGenerateWarp(mode) {
 
 optWarpAwg.addEventListener('click', () => handleGenerateWarp('awg'));
 optWarpMasque.addEventListener('click', () => handleGenerateWarp('masque'));
+
+// ==========================================
+// CONNECTION LOGS VIEWER MODAL
+// ==========================================
+const modalLogs = document.getElementById('modal-logs');
+const btnHeroLogs = document.getElementById('btn-hero-logs');
+const btnCloseLogs = document.getElementById('btn-close-logs');
+const logsTerminal = document.getElementById('logs-terminal');
+const btnCopyLogs = document.getElementById('btn-copy-logs');
+const btnClearLogs = document.getElementById('btn-clear-logs');
+const chkLogsAutoscroll = document.getElementById('chk-logs-autoscroll');
+const filterBtns = document.querySelectorAll('.logs-filter-pill');
+
+let currentLogFilter = 'all';
+let rawLogData = '';
+let logPollTimer = null;
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function openLogsModal() {
+  btnHeroLogs?.classList.remove('has-error');
+  if (modalLogs) {
+    modalLogs.classList.add('open');
+  }
+  fetchAndRenderLogs();
+  if (logPollTimer) clearInterval(logPollTimer);
+  logPollTimer = setInterval(fetchAndRenderLogs, 1500);
+}
+
+function closeLogsModal() {
+  if (modalLogs) {
+    modalLogs.classList.remove('open');
+  }
+  if (logPollTimer) {
+    clearInterval(logPollTimer);
+    logPollTimer = null;
+  }
+}
+
+btnHeroLogs?.addEventListener('click', openLogsModal);
+btnCloseLogs?.addEventListener('click', closeLogsModal);
+
+filterBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    filterBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentLogFilter = btn.dataset.filter || 'all';
+    renderFormattedLogs(rawLogData);
+  });
+});
+
+async function fetchAndRenderLogs() {
+  try {
+    const logs = await GetCoreLogs(300);
+    rawLogData = logs || '';
+    renderFormattedLogs(rawLogData);
+  } catch (err) {
+    console.error('Failed to get core logs:', err);
+  }
+}
+
+function renderFormattedLogs(text) {
+  if (!logsTerminal) return;
+  const lines = text ? text.split('\n') : [];
+
+  let errorCount = 0;
+  let warnCount = 0;
+  const parsedLines = [];
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    let level = 'info';
+    const upper = line.toUpperCase();
+    if (upper.includes('ERROR') || upper.includes('FATAL') || upper.includes('PANIC')) {
+      level = 'error';
+      errorCount++;
+    } else if (upper.includes('WARN')) {
+      level = 'warn';
+      warnCount++;
+    }
+
+    if (currentLogFilter === 'error' && level !== 'error') continue;
+    if (currentLogFilter === 'warn' && level !== 'warn') continue;
+
+    parsedLines.push({ raw: line, level });
+  }
+
+  const badgeErr = document.getElementById('logs-count-error');
+  if (badgeErr) badgeErr.innerText = String(errorCount);
+  const badgeWarn = document.getElementById('logs-count-warn');
+  if (badgeWarn) badgeWarn.innerText = String(warnCount);
+
+  if (parsedLines.length === 0) {
+    logsTerminal.innerHTML = `<div class="log-empty-msg">${t('logs_empty', 'Журнал пуст. Запустите подключение для записи событий.')}</div>`;
+    return;
+  }
+
+  const html = parsedLines.map(item => {
+    const esc = escapeHtml(item.raw);
+    let badgeHtml = '';
+    if (item.level === 'error') {
+      badgeHtml = `<span class="log-level-badge badge-error">ERROR</span>`;
+    } else if (item.level === 'warn') {
+      badgeHtml = `<span class="log-level-badge badge-warn">WARN</span>`;
+    } else {
+      badgeHtml = `<span class="log-level-badge badge-info">INFO</span>`;
+    }
+    return `<div class="log-line log-${item.level}">${badgeHtml}<span class="log-msg">${esc}</span></div>`;
+  }).join('');
+
+  const shouldScroll = chkLogsAutoscroll?.checked;
+  logsTerminal.innerHTML = html;
+  if (shouldScroll) {
+    logsTerminal.scrollTop = logsTerminal.scrollHeight;
+  }
+}
+
+btnCopyLogs?.addEventListener('click', async () => {
+  if (!rawLogData) {
+    showToast(t('logs_empty', 'Логи пусты'));
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(rawLogData);
+    showToast(t('logs_copied', 'Логи скопированы в буфер обмена'));
+  } catch (e) {
+    showToast('Не удалось скопировать логи');
+  }
+});
+
+btnClearLogs?.addEventListener('click', async () => {
+  try {
+    await ClearCoreLogs();
+    rawLogData = '';
+    renderFormattedLogs('');
+    showToast(t('logs_cleared', 'Журнал логов очищен'));
+  } catch (err) {
+    showToast(`Ошибка очистки: ${err}`);
+  }
+});
 
 // Add Node Modal
 const modalAddNode = document.getElementById('modal-add-node');

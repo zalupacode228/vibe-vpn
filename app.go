@@ -244,6 +244,11 @@ func (a *App) AddManualNode(link string) (*models.Node, error) {
 	return node, nil
 }
 
+type FileResult struct {
+	Content  string `json:"content"`
+	FileName string `json:"file_name"`
+}
+
 func (a *App) GenerateWarp(mode string) (*models.Node, error) {
 	node, err := warp.GenerateWarp(mode)
 	if err != nil {
@@ -259,6 +264,61 @@ func (a *App) GenerateWarp(mode string) (*models.Node, error) {
 
 	_ = a.SetActiveNodeID(node.ID)
 	return node, nil
+}
+
+func (a *App) SelectWarpConfigFile() (*FileResult, error) {
+	if a.ctx == nil {
+		return nil, fmt.Errorf("context not initialized")
+	}
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Выберите файл конфигурации WARP / WireGuard (.conf)",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "WireGuard & AmneziaWG Config (*.conf, *.wireguard, *.txt)",
+				Pattern:     "*.conf;*.wireguard;*.txt",
+			},
+			{
+				DisplayName: "Все файлы (*.*)",
+				Pattern:     "*.*",
+			},
+		},
+	})
+	if err != nil || path == "" {
+		return nil, err
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("не удалось прочитать файл: %w", err)
+	}
+	return &FileResult{
+		Content:  string(data),
+		FileName: filepath.Base(path),
+	}, nil
+}
+
+func (a *App) ImportWarpConfig(content string, customName string) (*models.Node, error) {
+	node, err := warp.ParseWireguardConf(content, customName)
+	if err != nil {
+		return nil, err
+	}
+
+	nodes := a.storage.LoadNodes()
+	// Place imported node at the top
+	nodes = append([]models.Node{*node}, nodes...)
+	if err := a.storage.SaveNodes(nodes); err != nil {
+		return nil, err
+	}
+
+	_ = a.SetActiveNodeID(node.ID)
+	return node, nil
+}
+
+func (a *App) GetCoreLogs(maxLines int) string {
+	return a.controller.GetLogs(maxLines)
+}
+
+func (a *App) ClearCoreLogs() error {
+	return a.controller.ClearLogs()
 }
 
 func (a *App) DeleteNode(id string) error {

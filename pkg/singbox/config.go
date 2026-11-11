@@ -574,7 +574,7 @@ func (b *ConfigBuilder) GenerateConfig(
 
 	config := map[string]interface{}{
 		"log": map[string]interface{}{
-			"level":     "warn",
+			"level":     "info",
 			"timestamp": true,
 		},
 		"dns": map[string]interface{}{

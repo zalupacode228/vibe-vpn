@@ -79,3 +79,11 @@ export function RestartAsAdmin():Promise<void>;
 export function CheckVPNConflicts():Promise<Array<string>>;
 
 export function KillConflictingVPNs():Promise<void>;
+
+export function SelectWarpConfigFile():Promise<any>;
+
+export function ImportWarpConfig(arg1:string,arg2:string):Promise<any>;
+
+export function GetCoreLogs(arg1:number):Promise<string>;
+
+export function ClearCoreLogs():Promise<void>;

@@ -158,3 +158,19 @@ export function KillConflictingVPNs() {
   return window['go']['main']['App']['KillConflictingVPNs']();
 }
 
+export function SelectWarpConfigFile() {
+  return window['go']['main']['App']['SelectWarpConfigFile']();
+}
+
+export function ImportWarpConfig(arg1, arg2) {
+  return window['go']['main']['App']['ImportWarpConfig'](arg1, arg2);
+}
+
+export function GetCoreLogs(arg1) {
+  return window['go']['main']['App']['GetCoreLogs'](arg1);
+}
+
+export function ClearCoreLogs() {
+  return window['go']['main']['App']['ClearCoreLogs']();
+}
+
