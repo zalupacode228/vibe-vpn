@@ -1738,6 +1738,38 @@ body {
   color: #655e72;
 }
 
+.btn-browse-input {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #2a2339;
+  color: #e2d9f3;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn-browse-input:hover {
+  background: #352c48;
+  border-color: #a78bfa;
+  color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.15);
+}
+
+.btn-browse-input:active {
+  transform: scale(0.97);
+  background: #221c2e;
+}
+
 .form-row-action {
   display: flex;
   justify-content: flex-end;

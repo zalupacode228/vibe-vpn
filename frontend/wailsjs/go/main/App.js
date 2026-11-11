@@ -110,6 +110,10 @@ export function SelectExeFile() {
   return window['go']['main']['App']['SelectExeFile']();
 }
 
+export function SelectGeoRuleFile() {
+  return window['go']['main']['App']['SelectGeoRuleFile']();
+}
+
 export function SetActiveNodeID(arg1) {
   return window['go']['main']['App']['SetActiveNodeID'](arg1);
 }

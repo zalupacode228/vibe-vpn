@@ -701,11 +701,30 @@ func (a *App) AddPresetList(presetKey string) (*models.CustomList, error) {
 	return &newItem, nil
 }
 
+func (a *App) SelectGeoRuleFile() (string, error) {
+	if a.ctx == nil {
+		return "", fmt.Errorf("context not initialized")
+	}
+	return runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Выберите файл со списком доменов или IP",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "Списки правил (*.txt, *.list, *.conf)",
+				Pattern:     "*.txt;*.list;*.conf",
+			},
+			{
+				DisplayName: "Все файлы (*.*)",
+				Pattern:     "*.*",
+			},
+		},
+	})
+}
+
 func (a *App) AddCustomList(name string, urlStr string, action string) (*models.CustomList, error) {
 	name = strings.TrimSpace(name)
-	urlStr = strings.TrimSpace(urlStr)
+	urlStr = strings.Trim(strings.TrimSpace(urlStr), "\"'")
 	if name == "" || urlStr == "" {
-		return nil, fmt.Errorf("имя и URL не могут быть пустыми")
+		return nil, fmt.Errorf("имя и URL / путь к файлу не могут быть пустыми")
 	}
 	if action == "" {
 		action = "proxy"
