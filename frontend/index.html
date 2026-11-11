@@ -165,14 +165,70 @@
             </div>
           </div>
 
-          <div class="telemetry-card">
-            <div class="telemetry-icon-box blue">
-              <svg class="telemetry-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+          <div class="telemetry-card interactive-mode-card" id="card-quick-mode" role="button" tabindex="0">
+            <div class="telemetry-icon-box blue" id="quick-mode-icon-box">
+              <svg class="telemetry-icon" id="quick-mode-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
             </div>
             <div class="telemetry-data">
-              <div class="telemetry-label" data-i18n="quick_mode_switch">Режим работы</div>
-              <div id="stat-mode" class="telemetry-val">Белый список</div>
+              <div class="telemetry-label" style="display: flex; align-items: center; justify-content: space-between;">
+                <span data-i18n="quick_mode_switch">Быстрое переключение режима</span>
+                <span class="quick-mode-switch-btn" id="btn-quick-mode-pill">
+                  <span data-i18n="choose_mode">Выбрать ▾</span>
+                </span>
+              </div>
+              <div id="stat-mode" class="telemetry-val">Только выбранные</div>
               <div class="telemetry-sub" data-i18n="routes_subtitle">Раздельное туннелирование</div>
+            </div>
+
+            <!-- Mode Selector Dropdown Menu -->
+            <div id="quick-mode-dropdown" class="quick-mode-dropdown" style="display: none;">
+              <div class="mode-dropdown-header" data-i18n="select_routing_mode">Выберите режим туннелирования</div>
+              
+              <div class="mode-dropdown-item active" data-mode="whitelist">
+                <div class="mode-item-icon-box blue">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+                </div>
+                <div class="mode-item-info">
+                  <div class="mode-item-title-row">
+                    <span class="mode-item-title" data-i18n="mode_whitelist_short">Только выбранные</span>
+                    <span class="badge-protocol" data-i18n="recommended">Рекомендуется</span>
+                  </div>
+                  <div class="mode-item-desc" data-i18n="mode_whitelist_desc">Проксируются только приложения из списка</div>
+                </div>
+                <div class="mode-item-check">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </div>
+              </div>
+
+              <div class="mode-dropdown-item" data-mode="blacklist">
+                <div class="mode-item-icon-box orange">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
+                </div>
+                <div class="mode-item-info">
+                  <div class="mode-item-title-row">
+                    <span class="mode-item-title" data-i18n="mode_blacklist_short">Все кроме выбранных</span>
+                  </div>
+                  <div class="mode-item-desc" data-i18n="mode_blacklist_desc">Проксируется всё, кроме выбранных приложений</div>
+                </div>
+                <div class="mode-item-check">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </div>
+              </div>
+
+              <div class="mode-dropdown-item" data-mode="global">
+                <div class="mode-item-icon-box purple">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                </div>
+                <div class="mode-item-info">
+                  <div class="mode-item-title-row">
+                    <span class="mode-item-title" data-i18n="mode_global_short">Весь трафик (Global)</span>
+                  </div>
+                  <div class="mode-item-desc" data-i18n="mode_global_desc">Полный туннель: весь сетевой трафик идет через VPN</div>
+                </div>
+                <div class="mode-item-check">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -221,9 +277,9 @@
             </div>
             <div class="mode-card" data-mode="global">
               <div class="mode-card-header">
-                <span class="mode-title">Весь трафик (Global)</span>
+                <span class="mode-title" data-i18n="mode_global_short">Весь трафик (Global)</span>
               </div>
-              <div class="mode-desc">Полный туннель: абсолютно все сетевые подключения устройства идут через VPN.</div>
+              <div class="mode-desc" data-i18n="mode_global_desc">Полный туннель: абсолютно все сетевые подключения устройства идут через VPN.</div>
             </div>
             <div class="mode-card" data-mode="direct">
               <div class="mode-card-header">
@@ -481,6 +537,44 @@
           </div>
         </div>
 
+        <!-- Subscriptions & Device Identification (UA & HWID) -->
+        <div class="card">
+          <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 8px;" data-i18n="settings_section_subs_headers">Параметры подписок и Идентификация</h3>
+          
+          <div class="setting-row" style="flex-wrap: wrap; gap: 12px;">
+            <div style="flex: 1; min-width: 240px;">
+              <div class="setting-label" data-i18n="settings_ua_label">User-Agent подписок</div>
+              <div class="setting-desc" data-i18n="settings_ua_desc">HTTP заголовок клиента при запросе подписок. Некоторые провайдеры требуют v2rayN, ClashMeta или Happ</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end; min-width: 280px;">
+              <input id="set-user-agent" class="setting-input tabular" type="text" placeholder="v2rayNG/1.8.5" style="width: 100%; min-width: 280px;"/>
+              <div class="ua-presets-wrap">
+                <button type="button" class="btn-preset-pill" data-ua="v2rayNG/1.8.5">v2rayNG</button>
+                <button type="button" class="btn-preset-pill" data-ua="v2rayN/6.42">v2rayN</button>
+                <button type="button" class="btn-preset-pill" data-ua="ClashMeta">ClashMeta</button>
+                <button type="button" class="btn-preset-pill" data-ua="sing-box">sing-box</button>
+                <button type="button" class="btn-preset-pill" data-ua="Happ/1.2">Happ</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="setting-row" style="flex-wrap: wrap; gap: 12px;">
+            <div style="flex: 1; min-width: 240px;">
+              <div class="setting-label" data-i18n="settings_hwid_label">HWID устройства (Hardware ID)</div>
+              <div class="setting-desc" data-i18n="settings_hwid_desc">Идентификатор устройства в заголовках HWID, X-HWID и X-Device-Id для панелей с лимитом устройств (Marzban, 3X-UI)</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 280px;">
+              <input id="set-hwid" class="setting-input tabular hwid-input" type="text" placeholder="00000000-0000-0000-0000-000000000000" style="flex: 1; min-width: 220px; font-family: 'Consolas', monospace; font-size: 12px;"/>
+              <button id="btn-copy-hwid" class="btn-icon-square" type="button" title="Копировать HWID" data-i18n-title="btn_copy_hwid">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+              </button>
+              <button id="btn-generate-hwid" class="btn-icon-square" type="button" title="Сгенерировать случайный HWID" data-i18n-title="btn_generate_hwid">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="card">
           <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 8px;" data-i18n="settings_section_system">Системные</h3>
           
@@ -526,7 +620,7 @@
             <div>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <div class="setting-label" data-i18n="settings_update_label">Текущая версия</div>
-                <span id="settings-app-version" class="badge" style="background: rgba(167, 139, 250, 0.15); color: #c4b5fd; font-weight: 700; font-size: 12px; padding: 2px 8px; border-radius: 6px;">v1.0.4</span>
+                <span id="settings-app-version" class="badge" style="background: rgba(167, 139, 250, 0.15); color: #c4b5fd; font-weight: 700; font-size: 12px; padding: 2px 8px; border-radius: 6px;">v1.0.5</span>
               </div>
               <div id="settings-update-desc" class="setting-desc" data-i18n="settings_update_desc">Проверка наличия обновлений на GitHub и автозамена файла</div>
             </div>

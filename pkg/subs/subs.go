@@ -12,13 +12,41 @@ import (
 	"vibe-go/pkg/models"
 )
 
-func FetchAndParse(subURL string, subID string, subName string) ([]models.Node, error) {
-	client := &http.Client{Timeout: 15 * time.Second}
+func FetchAndParse(subURL string, subID string, subName string, userAgent string, hwid string) ([]models.Node, error) {
+	ua := strings.TrimSpace(userAgent)
+	if ua == "" {
+		ua = "v2rayNG/1.8.5"
+	}
+	h := strings.TrimSpace(hwid)
+
+	client := &http.Client{
+		Timeout: 20 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return fmt.Errorf("stopped after 10 redirects")
+			}
+			req.Header.Set("User-Agent", ua)
+			if h != "" {
+				req.Header.Set("HWID", h)
+				req.Header.Set("X-HWID", h)
+				req.Header.Set("X-Device-Id", h)
+				req.Header.Set("Device-Id", h)
+			}
+			return nil
+		},
+	}
+
 	req, err := http.NewRequest("GET", subURL, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "v2rayNG/1.8.5")
+	req.Header.Set("User-Agent", ua)
+	if h != "" {
+		req.Header.Set("HWID", h)
+		req.Header.Set("X-HWID", h)
+		req.Header.Set("X-Device-Id", h)
+		req.Header.Set("Device-Id", h)
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {

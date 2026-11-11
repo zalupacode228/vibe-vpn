@@ -97,3 +97,5 @@ export function CheckUpdate():Promise<any>;
 export function DownloadAndApplyUpdate(arg1:string):Promise<void>;
 
 export function GetAppVersion():Promise<string>;
+export function GenerateRandomHWID():Promise<string>;
+export function GetDefaultHWID():Promise<string>;

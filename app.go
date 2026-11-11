@@ -17,6 +17,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"vibe-go/pkg/models"
@@ -29,7 +30,7 @@ import (
 	"vibe-go/pkg/warp"
 )
 
-const AppVersion = "v1.0.4"
+const AppVersion = "v1.0.5"
 
 //go:embed assets/core/sing-box.exe assets/core/wintun.dll
 var embeddedCore embed.FS
@@ -395,7 +396,8 @@ func (a *App) AddSubscription(name string, url string) ([]models.Node, error) {
 	}
 
 	subID := fmt.Sprintf("sub_%d", time.Now().Unix())
-	parsedNodes, err := subs.FetchAndParse(url, subID, name)
+	settings := a.storage.LoadSettings()
+	parsedNodes, err := subs.FetchAndParse(url, subID, name, settings.UserAgent, settings.HWID)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка загрузки подписки: %w", err)
 	}
@@ -434,7 +436,8 @@ func (a *App) RefreshSubscription(id string) ([]models.Node, error) {
 		return nil, fmt.Errorf("подписка не найдена")
 	}
 
-	newNodes, err := subs.FetchAndParse(targetSub.URL, targetSub.ID, targetSub.Name)
+	settings := a.storage.LoadSettings()
+	newNodes, err := subs.FetchAndParse(targetSub.URL, targetSub.ID, targetSub.Name, settings.UserAgent, settings.HWID)
 	if err != nil {
 		return nil, err
 	}
@@ -500,6 +503,14 @@ func (a *App) DeleteSubscription(id string) error {
 	}
 
 	return a.storage.SaveNodes(preserved)
+}
+
+func (a *App) GenerateRandomHWID() string {
+	return uuid.New().String()
+}
+
+func (a *App) GetDefaultHWID() string {
+	return storage.GetMachineHWID()
 }
 
 // App Rules & Processes

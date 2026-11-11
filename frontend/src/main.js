@@ -44,7 +44,9 @@ import {
   ClearCoreLogs,
   CheckUpdate,
   DownloadAndApplyUpdate,
-  GetAppVersion
+  GetAppVersion,
+  GenerateRandomHWID,
+  GetDefaultHWID
 } from '../wailsjs/go/main/App';
 import { EventsOn } from '../wailsjs/runtime/runtime';
 
@@ -719,8 +721,7 @@ async function pollTelemetry() {
     document.getElementById('stat-up-total').innerText = `${t('total_prefix', 'Всего')}: ${formatBytes(stats.total_up)}`;
     document.getElementById('stat-ping').innerText = stats.ping > 0 ? `${stats.ping} ms` : '— ms';
     document.getElementById('stat-server-ip').innerText = stats.ip || '—';
-    const isBlacklist = (state.settings.split_mode === 'blacklist' || stats.mode === 'blacklist' || stats.mode === 'Черный список');
-    document.getElementById('stat-mode').innerText = t(isBlacklist ? 'mode_blacklist_short' : 'mode_whitelist_short');
+    updateQuickModeCardUI(state.settings.split_mode || stats.mode);
 
     if (stats.node_name) {
       document.getElementById('hero-node-name').innerText = cleanNodeDisplayName(stats.node_name);
@@ -940,18 +941,132 @@ document.getElementById('btn-add-exe').addEventListener('click', async () => {
   }
 });
 
-// Routing: Mode Selection
+// Routing: Quick Mode Selector Dropdown
+const quickModeDropdown = document.getElementById('quick-mode-dropdown');
+const quickModeCard = document.getElementById('card-quick-mode');
+
+function updateQuickModeCardUI(mode) {
+  const currentMode = mode || state.settings.split_mode || 'whitelist';
+  const statModeEl = document.getElementById('stat-mode');
+  const iconBoxEl = document.getElementById('quick-mode-icon-box');
+
+  let modeKey = 'mode_whitelist_short';
+  let colorClass = 'blue';
+  let iconSvg = `<svg class="telemetry-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>`;
+
+  if (currentMode === 'blacklist') {
+    modeKey = 'mode_blacklist_short';
+    colorClass = 'orange';
+    iconSvg = `<svg class="telemetry-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>`;
+  } else if (currentMode === 'global') {
+    modeKey = 'mode_global_short';
+    colorClass = 'purple';
+    iconSvg = `<svg class="telemetry-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>`;
+  }
+
+  if (statModeEl) {
+    statModeEl.innerText = t(modeKey);
+  }
+  if (iconBoxEl) {
+    iconBoxEl.className = `telemetry-icon-box ${colorClass}`;
+    iconBoxEl.innerHTML = iconSvg;
+  }
+
+  // Update active item in quick-mode-dropdown
+  document.querySelectorAll('.mode-dropdown-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.mode === currentMode);
+  });
+
+  // Update active item in routing tab mode-cards
+  document.querySelectorAll('.mode-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.mode === currentMode);
+  });
+}
+
+function openQuickModeDropdown() {
+  if (!quickModeDropdown) return;
+  updateQuickModeCardUI(state.settings.split_mode);
+  quickModeDropdown.style.display = 'block';
+}
+
+function closeQuickModeDropdown() {
+  if (quickModeDropdown) {
+    quickModeDropdown.style.display = 'none';
+  }
+}
+
+if (quickModeCard) {
+  quickModeCard.addEventListener('click', (e) => {
+    if (e.target.closest('.mode-dropdown-item') || e.target.closest('.mode-dropdown-header')) {
+      return;
+    }
+    const isOpen = quickModeDropdown && quickModeDropdown.style.display === 'block';
+    if (isOpen) {
+      closeQuickModeDropdown();
+    } else {
+      openQuickModeDropdown();
+    }
+  });
+
+  quickModeCard.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      const isOpen = quickModeDropdown && quickModeDropdown.style.display === 'block';
+      if (isOpen) closeQuickModeDropdown();
+      else openQuickModeDropdown();
+    } else if (e.key === 'Escape') {
+      closeQuickModeDropdown();
+    }
+  });
+}
+
+// Close when clicking outside
+document.addEventListener('click', (e) => {
+  if (quickModeCard && !quickModeCard.contains(e.target)) {
+    closeQuickModeDropdown();
+  }
+});
+
+async function selectSplitMode(targetMode) {
+  closeQuickModeDropdown();
+  if (!targetMode) return;
+  state.settings.split_mode = targetMode;
+  updateQuickModeCardUI(targetMode);
+
+  try {
+    await SaveSettings(state.settings);
+
+    // Hot reload tunnel if connected
+    if (state.isConnected) {
+      try {
+        await ToggleVPN(true);
+      } catch (e) {
+        console.warn('Hot reload mode error:', e);
+      }
+    }
+
+    let modeName = t('mode_whitelist_short');
+    if (targetMode === 'blacklist') modeName = t('mode_blacklist_short');
+    else if (targetMode === 'global') modeName = t('mode_global_short');
+
+    showToast(`${t('mode_changed_to')}: ${modeName}`);
+  } catch (err) {
+    showToast(`${t('settings_error_save')}: ${err}`);
+  }
+}
+
+document.querySelectorAll('.mode-dropdown-item').forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const mode = item.dataset.mode;
+    selectSplitMode(mode);
+  });
+});
+
 document.querySelectorAll('.mode-card').forEach(card => {
   card.addEventListener('click', async () => {
     const mode = card.dataset.mode;
-    document.querySelectorAll('.mode-card').forEach(c => c.classList.toggle('active', c.dataset.mode === mode));
-    state.settings.split_mode = mode;
-    try {
-      await SaveSettings(state.settings);
-      showToast(`Режим изменен: ${card.querySelector('.mode-title').innerText}`);
-    } catch (err) {
-      showToast(`Ошибка сохранения: ${err}`);
-    }
+    selectSplitMode(mode);
   });
 });
 
@@ -1915,6 +2030,69 @@ document.getElementById('btn-refresh-conns').addEventListener('click', () => {
 });
 
 // ==================== SETTINGS PAGE ====================
+function updateUAPresetActive(val) {
+  document.querySelectorAll('.btn-preset-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.ua === val);
+  });
+}
+
+document.querySelectorAll('.btn-preset-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const ua = btn.dataset.ua;
+    const uaInput = document.getElementById('set-user-agent');
+    if (uaInput && ua) {
+      uaInput.value = ua;
+      updateUAPresetActive(ua);
+    }
+  });
+});
+
+const uaInputEl = document.getElementById('set-user-agent');
+if (uaInputEl) {
+  uaInputEl.addEventListener('input', () => {
+    updateUAPresetActive(uaInputEl.value);
+  });
+}
+
+const btnCopyHwid = document.getElementById('btn-copy-hwid');
+if (btnCopyHwid) {
+  btnCopyHwid.addEventListener('click', async () => {
+    const hwidInput = document.getElementById('set-hwid');
+    const val = hwidInput ? hwidInput.value.trim() : '';
+    if (!val) return;
+    try {
+      await navigator.clipboard.writeText(val);
+      showToast(t('hwid_copied', 'HWID скопирован в буфер обмена'));
+    } catch (_) {
+      if (hwidInput) {
+        hwidInput.select();
+        document.execCommand('copy');
+        showToast(t('hwid_copied', 'HWID скопирован в буфер обмена'));
+      }
+    }
+  });
+}
+
+const btnGenHwid = document.getElementById('btn-generate-hwid');
+if (btnGenHwid) {
+  btnGenHwid.addEventListener('click', async () => {
+    let newHwid = '';
+    try {
+      if (typeof GenerateRandomHWID === 'function') {
+        newHwid = await GenerateRandomHWID();
+      }
+    } catch (_) {}
+    if (!newHwid && window.crypto && window.crypto.randomUUID) {
+      newHwid = window.crypto.randomUUID();
+    }
+    const hwidInput = document.getElementById('set-hwid');
+    if (hwidInput && newHwid) {
+      hwidInput.value = newHwid;
+      showToast(t('hwid_generated', 'Сгенерирован новый случайный HWID'));
+    }
+  });
+}
+
 async function loadSettingsPage() {
   try {
     state.settings = await GetSettings();
@@ -1930,6 +2108,16 @@ async function loadSettingsPage() {
     document.getElementById('set-autostart').checked = !!state.settings.auto_start;
     document.getElementById('set-minimize-tray').checked = !!state.settings.minimize_to_tray;
     document.getElementById('set-privacy-blur').checked = !!state.settings.privacy_blur;
+
+    const uaInput = document.getElementById('set-user-agent');
+    if (uaInput) {
+      uaInput.value = state.settings.user_agent || 'v2rayNG/1.8.5';
+      updateUAPresetActive(uaInput.value);
+    }
+    const hwidInput = document.getElementById('set-hwid');
+    if (hwidInput) {
+      hwidInput.value = state.settings.hwid || '';
+    }
 
     try {
       const ver = await GetAppVersion();
@@ -1955,6 +2143,15 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
     state.settings.auto_start = document.getElementById('set-autostart').checked;
     state.settings.minimize_to_tray = document.getElementById('set-minimize-tray').checked;
     state.settings.privacy_blur = document.getElementById('set-privacy-blur').checked;
+
+    const uaInput = document.getElementById('set-user-agent');
+    if (uaInput) {
+      state.settings.user_agent = uaInput.value.trim() || 'v2rayNG/1.8.5';
+    }
+    const hwidInput = document.getElementById('set-hwid');
+    if (hwidInput) {
+      state.settings.hwid = hwidInput.value.trim();
+    }
 
     await SaveSettings(state.settings);
     const eff = getEffectiveLanguage(state.settings.language, detectedSystemLanguage);
@@ -2454,6 +2651,7 @@ async function initApp() {
     document.querySelectorAll('.mode-card').forEach(c => {
       c.classList.toggle('active', c.dataset.mode === mode);
     });
+    updateQuickModeCardUI(mode);
 
     state.nodes = (await GetNodes()) || [];
     state.subscriptions = (await GetSubscriptions()) || [];
