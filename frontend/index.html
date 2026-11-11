@@ -916,12 +916,12 @@
 
   <!-- Modal: Application Update -->
   <div id="modal-app-update" class="modal-overlay">
-    <div class="modal-card">
+    <div class="modal-card modal-card-update">
       <div class="modal-header">
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <h2 class="modal-title" data-i18n="modal_update_title">Доступно обновление</h2>
-            <span id="update-modal-badge" class="badge" style="background: rgba(167, 139, 250, 0.2); color: #c4b5fd; font-weight: 700; font-size: 11px; padding: 2px 7px; border-radius: 6px;">v1.0.4</span>
+            <span id="update-modal-badge" class="badge-version">v1.0.4</span>
           </div>
           <p class="modal-subtitle">
             <span data-i18n="modal_update_subtitle">Обнаружен новый релиз VibeVPN на GitHub</span>
@@ -936,25 +936,28 @@
       <div class="modal-body">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <label class="form-label" style="margin-bottom: 0;" data-i18n="update_changelog_label">Что нового в этом выпуске:</label>
-          <div id="update-modal-size" style="font-size: 11px; color: #94a3b8; font-variant-numeric: tabular-nums;">83.1 МБ</div>
+          <div id="update-modal-size" class="update-size-badge">83.1 МБ</div>
         </div>
         
-        <div id="update-modal-notes" style="background: #151022; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; max-height: 180px; overflow-y: auto; font-size: 12.5px; line-height: 1.6; color: #e2e8f0; white-space: pre-wrap;">
+        <div id="update-modal-notes" class="update-notes-box">
         </div>
 
-        <!-- Download progress section -->
-        <div id="update-progress-section" style="display: none; margin-top: 14px;">
-          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
-            <span id="update-progress-label" data-i18n="update_downloading" style="color: #a78bfa; font-weight: 500;">Загрузка обновления...</span>
-            <span id="update-progress-percent" style="font-weight: 700; color: #f1f5f9; font-variant-numeric: tabular-nums;">0%</span>
+        <!-- Download progress card (shown while downloading) -->
+        <div id="update-progress-section" class="update-progress-card" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div class="update-spinner"></div>
+              <span id="update-progress-label" data-i18n="update_downloading" style="color: #e2e8f0; font-size: 13px; font-weight: 500;">Загрузка обновления...</span>
+            </div>
+            <span id="update-progress-percent" style="font-weight: 700; color: #c084fc; font-size: 13px; font-variant-numeric: tabular-nums;">0%</span>
           </div>
-          <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
-            <div id="update-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #7c3aed, #a78bfa); border-radius: 4px; transition: width 0.15s ease;"></div>
+          <div class="update-bar-track">
+            <div id="update-progress-bar" class="update-bar-fill"></div>
           </div>
         </div>
       </div>
 
-      <div class="modal-actions">
+      <div id="update-modal-actions" class="modal-actions">
         <button id="btn-cancel-update" class="btn-pill" data-i18n="btn_update_later">Не сейчас</button>
         <button id="btn-confirm-update" class="btn-pill primary" style="gap: 6px;">
           <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
