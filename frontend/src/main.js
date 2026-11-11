@@ -1612,18 +1612,18 @@ function renderFormattedLogs(text) {
   const html = parsedLines.map(item => {
     let badgeHtml = '';
     if (item.level === 'error') {
-      badgeHtml = `<span class="log-level-badge badge-error">ERROR</span>`;
+      badgeHtml = `<span class="log-badge badge-error">ERROR</span>`;
     } else if (item.level === 'warn') {
-      badgeHtml = `<span class="log-level-badge badge-warn">WARN</span>`;
+      badgeHtml = `<span class="log-badge badge-warn">WARN</span>`;
     } else {
-      badgeHtml = `<span class="log-level-badge badge-info">INFO</span>`;
+      badgeHtml = `<span class="log-badge badge-info">INFO</span>`;
     }
 
-    const timeHtml = item.timeStr ? `<span class="log-time">${escapeHtml(item.timeStr)}</span>` : '';
-    const tagHtml = item.tag ? `<span class="log-tag">[${escapeHtml(item.tag)}]</span>` : '';
-    const msgHtml = `<span class="log-msg">${escapeHtml(item.msg)}</span>`;
+    const timeHtml = `<span class="log-time">${escapeHtml(item.timeStr || '--:--:--')}</span>`;
+    const tagHtml = item.tag ? `<span class="log-tag-badge">[${escapeHtml(item.tag)}]</span>` : '';
+    const msgHtml = `<span class="log-msg">${tagHtml}${escapeHtml(item.msg)}</span>`;
 
-    return `<div class="log-line log-${item.level}">${timeHtml}${badgeHtml}${tagHtml}${msgHtml}</div>`;
+    return `<div class="log-row log-${item.level}">${timeHtml}${badgeHtml}${msgHtml}</div>`;
   }).join('');
 
   const shouldScroll = chkLogsAutoscroll?.checked;
