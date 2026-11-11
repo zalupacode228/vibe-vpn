@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -710,20 +711,28 @@ func (a *App) AddCustomList(name string, urlStr string, action string) (*models.
 		action = "proxy"
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(urlStr)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка скачивания списка: %w", err)
-	}
-	defer resp.Body.Close()
+	var bodyBytes []byte
+	if strings.HasPrefix(urlStr, "http://") || strings.HasPrefix(urlStr, "https://") {
+		client := &http.Client{Timeout: 15 * time.Second}
+		resp, err := client.Get(urlStr)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка скачивания списка: %w", err)
+		}
+		defer resp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка чтения ответа: %w", err)
+		bodyBytes, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка чтения ответа: %w", err)
+		}
+	} else if data, err := os.ReadFile(urlStr); err == nil {
+		bodyBytes = data
+	} else {
+		return nil, fmt.Errorf("укажите корректный URL (https://...) или локальный путь к файлу")
 	}
 
 	lines := strings.Split(string(bodyBytes), "\n")
 	var domains []string
+	var ips []string
 	for _, l := range lines {
 		l = strings.TrimSpace(l)
 		if l == "" || strings.HasPrefix(l, "#") || strings.HasPrefix(l, "//") {
@@ -732,7 +741,19 @@ func (a *App) AddCustomList(name string, urlStr string, action string) (*models.
 		l = strings.TrimPrefix(l, "domain:")
 		l = strings.TrimPrefix(l, "full:")
 		l = strings.TrimPrefix(l, "regexp:")
-		if l != "" {
+		if l == "" {
+			continue
+		}
+
+		if _, _, err := net.ParseCIDR(l); err == nil {
+			ips = append(ips, l)
+		} else if parsedIP := net.ParseIP(l); parsedIP != nil {
+			if parsedIP.To4() != nil {
+				ips = append(ips, l+"/32")
+			} else {
+				ips = append(ips, l+"/128")
+			}
+		} else {
 			domains = append(domains, l)
 		}
 	}
@@ -745,7 +766,8 @@ func (a *App) AddCustomList(name string, urlStr string, action string) (*models.
 		Action:      action,
 		Enabled:     true,
 		Domains:     domains,
-		Count:       len(domains),
+		IPs:         ips,
+		Count:       len(domains) + len(ips),
 		LastUpdated: time.Now().Format("02.01 15:04"),
 	}
 
@@ -759,38 +781,60 @@ func (a *App) AddCustomList(name string, urlStr string, action string) (*models.
 
 func (a *App) RefreshAllCustomLists() (int, error) {
 	lists := a.storage.LoadCustomLists()
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 15 * time.Second}
 	updatedCount := 0
 
 	for i := range lists {
-		if lists[i].URL == "" || !strings.HasPrefix(lists[i].URL, "http") {
-			continue
-		}
-		resp, err := client.Get(lists[i].URL)
-		if err != nil {
-			continue
-		}
-		bodyBytes, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
+		var bodyBytes []byte
+		if strings.HasPrefix(lists[i].URL, "http://") || strings.HasPrefix(lists[i].URL, "https://") {
+			resp, err := client.Get(lists[i].URL)
+			if err != nil {
+				continue
+			}
+			data, err := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if err != nil {
+				continue
+			}
+			bodyBytes = data
+		} else if data, err := os.ReadFile(lists[i].URL); err == nil {
+			bodyBytes = data
+		} else {
 			continue
 		}
 
 		lines := strings.Split(string(bodyBytes), "\n")
 		var domains []string
+		var ips []string
 		for _, l := range lines {
 			l = strings.TrimSpace(l)
-			if l == "" || strings.HasPrefix(l, "#") {
+			if l == "" || strings.HasPrefix(l, "#") || strings.HasPrefix(l, "//") {
 				continue
 			}
 			l = strings.TrimPrefix(l, "domain:")
-			if l != "" {
+			l = strings.TrimPrefix(l, "full:")
+			l = strings.TrimPrefix(l, "regexp:")
+			if l == "" {
+				continue
+			}
+
+			if _, _, err := net.ParseCIDR(l); err == nil {
+				ips = append(ips, l)
+			} else if parsedIP := net.ParseIP(l); parsedIP != nil {
+				if parsedIP.To4() != nil {
+					ips = append(ips, l+"/32")
+				} else {
+					ips = append(ips, l+"/128")
+				}
+			} else {
 				domains = append(domains, l)
 			}
 		}
-		if len(domains) > 0 {
+
+		if len(domains) > 0 || len(ips) > 0 {
 			lists[i].Domains = domains
-			lists[i].Count = len(domains)
+			lists[i].IPs = ips
+			lists[i].Count = len(domains) + len(ips)
 			lists[i].LastUpdated = time.Now().Format("02.01 15:04")
 			updatedCount++
 		}
