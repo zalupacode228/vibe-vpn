@@ -29,7 +29,7 @@ import (
 	"vibe-go/pkg/warp"
 )
 
-const AppVersion = "v1.0.3"
+const AppVersion = "v1.0.4"
 
 //go:embed assets/core/sing-box.exe assets/core/wintun.dll
 var embeddedCore embed.FS
