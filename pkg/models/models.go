@@ -131,3 +131,13 @@ type ConnectionItem struct {
 	DownSpeed   string `json:"down_speed"`
 	UpSpeed     string `json:"up_speed"`
 }
+
+type UpdateInfo struct {
+	Available      bool   `json:"available"`
+	CurrentVersion string `json:"current_version"`
+	LatestVersion  string `json:"latest_version"`
+	ReleaseNotes   string `json:"release_notes"`
+	DownloadURL    string `json:"download_url"`
+	AssetSize      int64  `json:"asset_size"`
+	PublishedAt    string `json:"published_at"`
+}

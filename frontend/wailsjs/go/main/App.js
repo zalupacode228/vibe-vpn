@@ -114,6 +114,18 @@ export function SelectGeoRuleFile() {
   return window['go']['main']['App']['SelectGeoRuleFile']();
 }
 
+export function CheckUpdate() {
+  return window['go']['main']['App']['CheckUpdate']();
+}
+
+export function DownloadAndApplyUpdate(arg1) {
+  return window['go']['main']['App']['DownloadAndApplyUpdate'](arg1);
+}
+
+export function GetAppVersion() {
+  return window['go']['main']['App']['GetAppVersion']();
+}
+
 export function SetActiveNodeID(arg1) {
   return window['go']['main']['App']['SetActiveNodeID'](arg1);
 }

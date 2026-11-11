@@ -501,6 +501,27 @@
             </label>
           </div>
         </div>
+
+        <!-- Application Update Card -->
+        <div class="card">
+          <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 8px;" data-i18n="settings_section_update">Обновление приложения</h3>
+          
+          <div class="setting-row" style="align-items: center;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="setting-label" data-i18n="settings_update_label">Текущая версия</div>
+                <span id="settings-app-version" class="badge" style="background: rgba(167, 139, 250, 0.15); color: #c4b5fd; font-weight: 700; font-size: 12px; padding: 2px 8px; border-radius: 6px;">v1.0.3</span>
+              </div>
+              <div id="settings-update-desc" class="setting-desc" data-i18n="settings_update_desc">Проверка наличия обновлений на GitHub и автозамена файла</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button id="btn-check-update" class="btn-pill secondary" type="button" style="white-space: nowrap; gap: 6px;">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                <span data-i18n="btn_check_update">Проверить обновления</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
   </div>
@@ -873,6 +894,58 @@
       <div class="modal-actions">
         <button id="btn-close-qr" class="btn-pill" data-i18n="btn_close">Закрыть</button>
         <button id="btn-confirm-import-qr" class="btn-pill primary" style="display: none;" data-i18n="btn_import">Импортировать</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Application Update -->
+  <div id="modal-app-update" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h2 class="modal-title" data-i18n="modal_update_title">Доступно обновление</h2>
+            <span id="update-modal-badge" class="badge" style="background: rgba(167, 139, 250, 0.2); color: #c4b5fd; font-weight: 700; font-size: 11px; padding: 2px 7px; border-radius: 6px;">v1.0.4</span>
+          </div>
+          <p class="modal-subtitle">
+            <span data-i18n="modal_update_subtitle">Обнаружен новый релиз VibeVPN на GitHub</span>
+            (<span id="update-modal-ver-diff" style="color: #cbd5e1; font-weight: 500;">v1.0.3 → v1.0.4</span>)
+          </p>
+        </div>
+        <button id="btn-close-app-update" class="modal-close-btn" title="Закрыть">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <label class="form-label" style="margin-bottom: 0;" data-i18n="update_changelog_label">Что нового в этом выпуске:</label>
+          <div id="update-modal-size" style="font-size: 11px; color: #94a3b8; font-variant-numeric: tabular-nums;">83.1 МБ</div>
+        </div>
+        
+        <div id="update-modal-notes" style="background: #151022; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px; max-height: 180px; overflow-y: auto; font-size: 12.5px; line-height: 1.6; color: #e2e8f0; white-space: pre-wrap;">
+        </div>
+
+        <!-- Download progress section -->
+        <div id="update-progress-section" style="display: none; margin-top: 14px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+            <span id="update-progress-label" data-i18n="update_downloading" style="color: #a78bfa; font-weight: 500;">Загрузка обновления...</span>
+            <span id="update-progress-percent" style="font-weight: 700; color: #f1f5f9; font-variant-numeric: tabular-nums;">0%</span>
+          </div>
+          <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
+            <div id="update-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #7c3aed, #a78bfa); border-radius: 4px; transition: width 0.15s ease;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="btn-cancel-update" class="btn-pill" data-i18n="btn_update_later">Не сейчас</button>
+        <button id="btn-confirm-update" class="btn-pill primary" style="gap: 6px;">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/>
+          </svg>
+          <span data-i18n="btn_update_now">Обновить сейчас</span>
+        </button>
       </div>
     </div>
   </div>
