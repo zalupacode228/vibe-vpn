@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -26,6 +28,8 @@ import (
 	"vibe-go/pkg/tray"
 	"vibe-go/pkg/warp"
 )
+
+const AppVersion = "v1.0.3"
 
 //go:embed assets/core/sing-box.exe assets/core/wintun.dll
 var embeddedCore embed.FS
@@ -983,4 +987,224 @@ func (a *App) GetConnections() []models.ConnectionGroup {
 		return []models.ConnectionGroup{}
 	}
 	return conns
+}
+
+func (a *App) GetAppVersion() string {
+	return AppVersion
+}
+
+func parseSemver(v string) (int, int, int) {
+	v = strings.TrimPrefix(strings.TrimSpace(v), "v")
+	parts := strings.Split(v, ".")
+	var major, minor, patch int
+	if len(parts) > 0 {
+		fmt.Sscanf(parts[0], "%d", &major)
+	}
+	if len(parts) > 1 {
+		fmt.Sscanf(parts[1], "%d", &minor)
+	}
+	if len(parts) > 2 {
+		fmt.Sscanf(parts[2], "%d", &patch)
+	}
+	return major, minor, patch
+}
+
+func isNewerVersion(latest, current string) bool {
+	lMaj, lMin, lPat := parseSemver(latest)
+	cMaj, cMin, cPat := parseSemver(current)
+	if lMaj != cMaj {
+		return lMaj > cMaj
+	}
+	if lMin != cMin {
+		return lMin > cMin
+	}
+	return lPat > cPat
+}
+
+func (a *App) CheckUpdate() (*models.UpdateInfo, error) {
+	client := &http.Client{Timeout: 10 * time.Second}
+	req, err := http.NewRequest("GET", "https://api.github.com/repos/zalupacode228/vibe-vpn/releases/latest", nil)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка создания запроса: %w", err)
+	}
+	req.Header.Set("User-Agent", "VibeVPN-Client")
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка проверки обновлений: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("GitHub API ответил со статусом %d", resp.StatusCode)
+	}
+
+	var rel struct {
+		TagName     string `json:"tag_name"`
+		Name        string `json:"name"`
+		Body        string `json:"body"`
+		PublishedAt string `json:"published_at"`
+		Assets      []struct {
+			Name               string `json:"name"`
+			Size               int64  `json:"size"`
+			BrowserDownloadURL string `json:"browser_download_url"`
+		} `json:"assets"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
+		return nil, fmt.Errorf("ошибка парсинга ответа GitHub: %w", err)
+	}
+
+	current := AppVersion
+	latest := rel.TagName
+	available := isNewerVersion(latest, current)
+
+	var downloadURL string
+	var assetSize int64
+	for _, asset := range rel.Assets {
+		if strings.HasSuffix(strings.ToLower(asset.Name), ".exe") {
+			downloadURL = asset.BrowserDownloadURL
+			assetSize = asset.Size
+			break
+		}
+	}
+
+	return &models.UpdateInfo{
+		Available:      available,
+		CurrentVersion: current,
+		LatestVersion:  latest,
+		ReleaseNotes:   rel.Body,
+		DownloadURL:    downloadURL,
+		AssetSize:      assetSize,
+		PublishedAt:    rel.PublishedAt,
+	}, nil
+}
+
+func (a *App) DownloadAndApplyUpdate(downloadURL string) error {
+	if downloadURL == "" {
+		return fmt.Errorf("ссылка для скачивания пуста")
+	}
+
+	curExe, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("не удалось определить путь к приложению: %w", err)
+	}
+	curExe, err = filepath.EvalSymlinks(curExe)
+	if err != nil {
+		return fmt.Errorf("не удалось разрешить путь к приложению: %w", err)
+	}
+
+	tempExe := filepath.Join(os.TempDir(), fmt.Sprintf("VibeVPN_update_%d.exe", time.Now().UnixNano()))
+	out, err := os.Create(tempExe)
+	if err != nil {
+		return fmt.Errorf("не удалось создать временный файл: %w", err)
+	}
+
+	client := &http.Client{Timeout: 600 * time.Second}
+	req, err := http.NewRequest("GET", downloadURL, nil)
+	if err != nil {
+		out.Close()
+		os.Remove(tempExe)
+		return err
+	}
+	req.Header.Set("User-Agent", "VibeVPN-Client")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		out.Close()
+		os.Remove(tempExe)
+		return fmt.Errorf("ошибка скачивания обновления: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		out.Close()
+		os.Remove(tempExe)
+		return fmt.Errorf("сервер вернул статус %d при скачивании", resp.StatusCode)
+	}
+
+	totalSize := resp.ContentLength
+	var downloaded int64
+	buf := make([]byte, 64*1024)
+	lastReport := time.Now()
+
+	for {
+		n, rErr := resp.Body.Read(buf)
+		if n > 0 {
+			_, wErr := out.Write(buf[:n])
+			if wErr != nil {
+				out.Close()
+				os.Remove(tempExe)
+				return fmt.Errorf("ошибка записи во временный файл: %w", wErr)
+			}
+			downloaded += int64(n)
+
+			if totalSize > 0 && time.Since(lastReport) > 100*time.Millisecond {
+				percent := int(float64(downloaded) / float64(totalSize) * 100)
+				if a.ctx != nil {
+					runtime.EventsEmit(a.ctx, "update:progress", map[string]interface{}{
+						"percent":    percent,
+						"downloaded": downloaded,
+						"total":      totalSize,
+					})
+				}
+				lastReport = time.Now()
+			}
+		}
+		if rErr != nil {
+			if rErr == io.EOF {
+				break
+			}
+			out.Close()
+			os.Remove(tempExe)
+			return fmt.Errorf("ошибка при чтении потока: %w", rErr)
+		}
+	}
+	out.Close()
+
+	if a.ctx != nil {
+		runtime.EventsEmit(a.ctx, "update:progress", map[string]interface{}{
+			"percent":    100,
+			"downloaded": downloaded,
+			"total":      downloaded,
+		})
+	}
+
+	// Gracefully stop VPN if running
+	if a.controller != nil {
+		a.controller.Stop()
+	}
+
+	// PowerShell script to wait for this process to exit, move new exe over old exe, and start it
+	psScript := fmt.Sprintf(`
+Start-Sleep -Milliseconds 600
+$attempts = 0
+while ($attempts -lt 40) {
+    try {
+        Move-Item -LiteralPath '%s' -Destination '%s' -Force -ErrorAction Stop
+        break
+    } catch {
+        Start-Sleep -Milliseconds 300
+        $attempts++
+    }
+}
+Start-Process -FilePath '%s'
+`, strings.ReplaceAll(tempExe, "'", "''"), strings.ReplaceAll(curExe, "'", "''"), strings.ReplaceAll(curExe, "'", "''"))
+
+	cmd := exec.Command("powershell.exe", "-WindowStyle", "Hidden", "-NoProfile", "-Command", psScript)
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		CreationFlags: 0x08000000, // CREATE_NO_WINDOW
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("не удалось запустить процесс обновления: %w", err)
+	}
+
+	go func() {
+		time.Sleep(300 * time.Millisecond)
+		os.Exit(0)
+	}()
+
+	return nil
 }

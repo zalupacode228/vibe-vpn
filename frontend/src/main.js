@@ -41,8 +41,12 @@ import {
   ImportWarpConfig,
   SelectGeoRuleFile,
   GetCoreLogs,
-  ClearCoreLogs
+  ClearCoreLogs,
+  CheckUpdate,
+  DownloadAndApplyUpdate,
+  GetAppVersion
 } from '../wailsjs/go/main/App';
+import { EventsOn } from '../wailsjs/runtime/runtime';
 
 import {
   applyLanguage,
@@ -1926,6 +1930,12 @@ async function loadSettingsPage() {
     document.getElementById('set-autostart').checked = !!state.settings.auto_start;
     document.getElementById('set-minimize-tray').checked = !!state.settings.minimize_to_tray;
     document.getElementById('set-privacy-blur').checked = !!state.settings.privacy_blur;
+
+    try {
+      const ver = await GetAppVersion();
+      const verEl = document.getElementById('settings-app-version');
+      if (verEl && ver) verEl.innerText = ver;
+    } catch (_) {}
   } catch (err) {
     showToast(`${t('settings_error_load')}: ${err}`);
   }
@@ -2465,5 +2475,146 @@ async function initApp() {
     console.error('Init error:', err);
   }
 }
+
+// ==========================================
+// APPLICATION AUTO-UPDATE LOGIC
+// ==========================================
+const modalAppUpdate = document.getElementById('modal-app-update');
+const btnCheckUpdate = document.getElementById('btn-check-update');
+const btnCloseAppUpdate = document.getElementById('btn-close-app-update');
+const btnCancelUpdate = document.getElementById('btn-cancel-update');
+const btnConfirmUpdate = document.getElementById('btn-confirm-update');
+const updateModalBadge = document.getElementById('update-modal-badge');
+const updateModalVerDiff = document.getElementById('update-modal-ver-diff');
+const updateModalSize = document.getElementById('update-modal-size');
+const updateModalNotes = document.getElementById('update-modal-notes');
+const updateProgressSection = document.getElementById('update-progress-section');
+const updateProgressLabel = document.getElementById('update-progress-label');
+const updateProgressPercent = document.getElementById('update-progress-percent');
+const updateProgressBar = document.getElementById('update-progress-bar');
+const settingsUpdateDesc = document.getElementById('settings-update-desc');
+
+let pendingUpdateInfo = null;
+let isUpdating = false;
+
+// Listen for download progress from Go
+EventsOn('update:progress', (data) => {
+  if (!data) return;
+  const pct = data.percent || 0;
+  if (updateProgressPercent) updateProgressPercent.innerText = `${pct}%`;
+  if (updateProgressBar) updateProgressBar.style.width = `${pct}%`;
+  if (pct >= 100) {
+    if (updateProgressLabel) updateProgressLabel.innerText = t('update_restarting');
+  } else if (data.downloaded && data.total) {
+    const dlMb = (data.downloaded / (1024 * 1024)).toFixed(1);
+    const totMb = (data.total / (1024 * 1024)).toFixed(1);
+    if (updateProgressLabel) updateProgressLabel.innerText = `${t('update_downloading')} (${dlMb} / ${totMb} МБ)`;
+  }
+});
+
+function openUpdateModalWithInfo(info) {
+  if (!info) return;
+  pendingUpdateInfo = info;
+  if (updateModalBadge) updateModalBadge.innerText = info.latest_version;
+  if (updateModalVerDiff) updateModalVerDiff.innerText = `${info.current_version} → ${info.latest_version}`;
+  
+  const sizeMb = info.asset_size > 0 ? `${(info.asset_size / (1024 * 1024)).toFixed(1)} МБ` : '';
+  if (updateModalSize) updateModalSize.innerText = sizeMb;
+
+  if (updateModalNotes) {
+    updateModalNotes.innerText = info.release_notes || t('modal_update_subtitle');
+  }
+
+  if (updateProgressSection) updateProgressSection.style.display = 'none';
+  if (updateProgressBar) updateProgressBar.style.width = '0%';
+  if (btnConfirmUpdate) {
+    btnConfirmUpdate.disabled = false;
+    btnConfirmUpdate.style.display = 'inline-flex';
+  }
+  if (btnCancelUpdate) btnCancelUpdate.style.display = 'inline-flex';
+  if (btnCloseAppUpdate) btnCloseAppUpdate.style.display = 'inline-flex';
+
+  modalAppUpdate?.classList.add('open');
+}
+
+btnCheckUpdate?.addEventListener('click', async () => {
+  if (isUpdating) return;
+  const originalHtml = btnCheckUpdate.innerHTML;
+  btnCheckUpdate.disabled = true;
+  btnCheckUpdate.style.opacity = '0.6';
+  btnCheckUpdate.innerHTML = `
+    <svg class="btn-icon spinning" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
+    </svg>
+    <span>${t('btn_checking_update')}</span>
+  `;
+
+  try {
+    const info = await CheckUpdate();
+    pendingUpdateInfo = info;
+
+    if (info && info.available) {
+      openUpdateModalWithInfo(info);
+      if (settingsUpdateDesc) {
+        settingsUpdateDesc.innerHTML = `<span style="color: #a78bfa; font-weight: 600;">${t('update_new_available')} ${info.latest_version}</span>`;
+      }
+    } else {
+      showToast(`${t('update_latest_installed')} (${info ? info.current_version : ''}) ✅`);
+      if (settingsUpdateDesc) {
+        settingsUpdateDesc.innerHTML = `
+          <span style="color: #4ade80;">✓ ${t('update_latest_installed')} (${info ? info.current_version : ''})</span>
+          <button id="btn-force-open-update" type="button" style="background: none; border: none; color: #a78bfa; text-decoration: underline; cursor: pointer; font-size: 11px; margin-left: 8px;">
+            ${t('update_force_reinstall')}
+          </button>
+        `;
+        document.getElementById('btn-force-open-update')?.addEventListener('click', () => {
+          openUpdateModalWithInfo(info);
+        });
+      }
+    }
+  } catch (err) {
+    showToast(`${t('update_error')}: ${err}`);
+  } finally {
+    btnCheckUpdate.disabled = false;
+    btnCheckUpdate.style.opacity = '1';
+    btnCheckUpdate.innerHTML = originalHtml;
+  }
+});
+
+function closeUpdateModal() {
+  if (isUpdating) return; // Don't close while downloading
+  modalAppUpdate?.classList.remove('open');
+}
+
+btnCloseAppUpdate?.addEventListener('click', closeUpdateModal);
+btnCancelUpdate?.addEventListener('click', closeUpdateModal);
+
+btnConfirmUpdate?.addEventListener('click', async () => {
+  if (!pendingUpdateInfo || !pendingUpdateInfo.download_url) {
+    showToast('Ссылка на обновление не найдена');
+    return;
+  }
+
+  isUpdating = true;
+  btnConfirmUpdate.disabled = true;
+  if (btnCancelUpdate) btnCancelUpdate.style.display = 'none';
+  if (btnCloseAppUpdate) btnCloseAppUpdate.style.display = 'none';
+  if (updateProgressSection) updateProgressSection.style.display = 'block';
+  if (updateProgressLabel) updateProgressLabel.innerText = t('update_downloading');
+  if (updateProgressPercent) updateProgressPercent.innerText = '0%';
+  if (updateProgressBar) updateProgressBar.style.width = '0%';
+
+  try {
+    await DownloadAndApplyUpdate(pendingUpdateInfo.download_url);
+    if (updateProgressLabel) updateProgressLabel.innerText = t('update_restarting');
+  } catch (err) {
+    isUpdating = false;
+    btnConfirmUpdate.disabled = false;
+    if (btnCancelUpdate) btnCancelUpdate.style.display = 'inline-flex';
+    if (btnCloseAppUpdate) btnCloseAppUpdate.style.display = 'inline-flex';
+    if (updateProgressSection) updateProgressSection.style.display = 'none';
+    showToast(`Ошибка установки: ${err}`);
+  }
+});
 
 window.addEventListener('DOMContentLoaded', initApp);
