@@ -2471,6 +2471,21 @@ async function initApp() {
 
     pollTelemetry();
     state.pollTimer = setInterval(pollTelemetry, 1000);
+
+    // Background check for application updates on startup
+    setTimeout(async () => {
+      try {
+        const info = await CheckUpdate();
+        if (info) {
+          pendingUpdateInfo = info;
+          if (info.available) {
+            showHeaderUpdateBadge(info);
+          }
+        }
+      } catch (e) {
+        console.debug('Background update check:', e);
+      }
+    }, 1500);
   } catch (err) {
     console.error('Init error:', err);
   }
@@ -2479,6 +2494,9 @@ async function initApp() {
 // ==========================================
 // APPLICATION AUTO-UPDATE LOGIC
 // ==========================================
+const headerUpdateBadge = document.getElementById('header-update-badge');
+const headerUpdateText = document.getElementById('header-update-text');
+const btnDismissHeaderUpdate = document.getElementById('btn-dismiss-header-update');
 const modalAppUpdate = document.getElementById('modal-app-update');
 const btnCheckUpdate = document.getElementById('btn-check-update');
 const btnCloseAppUpdate = document.getElementById('btn-close-app-update');
@@ -2497,18 +2515,49 @@ const settingsUpdateDesc = document.getElementById('settings-update-desc');
 let pendingUpdateInfo = null;
 let isUpdating = false;
 
-// Listen for download progress from Go
-EventsOn('update:progress', (data) => {
-  if (!data) return;
-  const pct = data.percent || 0;
-  if (updateProgressPercent) updateProgressPercent.innerText = `${pct}%`;
-  if (updateProgressBar) updateProgressBar.style.width = `${pct}%`;
-  if (pct >= 100) {
-    if (updateProgressLabel) updateProgressLabel.innerText = t('update_restarting');
-  } else if (data.downloaded && data.total) {
-    const dlMb = (data.downloaded / (1024 * 1024)).toFixed(1);
-    const totMb = (data.total / (1024 * 1024)).toFixed(1);
-    if (updateProgressLabel) updateProgressLabel.innerText = `${t('update_downloading')} (${dlMb} / ${totMb} МБ)`;
+function showHeaderUpdateBadge(info) {
+  if (!info || !info.available) return;
+  const dismissed = sessionStorage.getItem(`dismissed_update_${info.latest_version}`);
+  if (dismissed === 'true') return;
+
+  if (headerUpdateText) {
+    headerUpdateText.innerText = `${t('header_update_available')} ${info.latest_version}`;
+  }
+  if (headerUpdateBadge) {
+    headerUpdateBadge.style.display = 'inline-flex';
+  }
+}
+
+// Clicking the header update badge navigates to Settings and highlights the update card
+headerUpdateBadge?.addEventListener('click', (e) => {
+  if (e.target.closest('#btn-dismiss-header-update')) return;
+
+  switchPage('settings');
+
+  setTimeout(() => {
+    const updateCard = document.getElementById('btn-check-update')?.closest('.card');
+    if (updateCard) {
+      updateCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      updateCard.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
+      updateCard.style.borderColor = 'rgba(167, 139, 250, 0.7)';
+      updateCard.style.boxShadow = '0 0 20px rgba(167, 139, 250, 0.35)';
+      setTimeout(() => {
+        updateCard.style.borderColor = '';
+        updateCard.style.boxShadow = '';
+      }, 2000);
+    }
+  }, 100);
+
+  if (pendingUpdateInfo) {
+    openUpdateModalWithInfo(pendingUpdateInfo);
+  }
+});
+
+btnDismissHeaderUpdate?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (headerUpdateBadge) headerUpdateBadge.style.display = 'none';
+  if (pendingUpdateInfo && pendingUpdateInfo.latest_version) {
+    sessionStorage.setItem(`dismissed_update_${pendingUpdateInfo.latest_version}`, 'true');
   }
 });
 
@@ -2554,6 +2603,7 @@ btnCheckUpdate?.addEventListener('click', async () => {
     pendingUpdateInfo = info;
 
     if (info && info.available) {
+      showHeaderUpdateBadge(info);
       openUpdateModalWithInfo(info);
       if (settingsUpdateDesc) {
         settingsUpdateDesc.innerHTML = `<span style="color: #a78bfa; font-weight: 600;">${t('update_new_available')} ${info.latest_version}</span>`;

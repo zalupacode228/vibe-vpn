@@ -18,6 +18,22 @@
       <span class="titlebar-title">VPN</span>
       <span id="title-status-badge" class="titlebar-badge" data-i18n="status_disconnected">Отключено</span>
       <button id="btn-admin-status" class="titlebar-admin-badge" style="display: none;" title="Статус прав администратора"></button>
+
+      <!-- Top Header Update Notification Pill -->
+      <div id="header-update-badge" class="titlebar-update-badge" style="display: none;" title="Нажмите, чтобы перейти в настройки и обновить">
+        <span class="update-badge-content">
+          <svg class="update-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+          <span id="header-update-text">Обновление</span>
+        </span>
+        <button id="btn-dismiss-header-update" class="update-dismiss-btn" type="button" title="Скрыть уведомление">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
     </div>
     <div class="titlebar-controls">
       <button id="btn-win-min" class="win-btn" title="Свернуть">

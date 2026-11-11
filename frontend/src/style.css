@@ -2127,6 +2127,80 @@ body {
   box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
 }
 
+/* Titlebar Update Notification Badge */
+.titlebar-update-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 4px 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(167, 139, 250, 0.16);
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  color: #c4b5fd;
+  pointer-events: auto;
+  --wails-draggable: no-drag;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.15);
+  animation: updatePulse 3s ease-in-out infinite;
+  white-space: nowrap;
+}
+
+@keyframes updatePulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(167, 139, 250, 0.2);
+    border-color: rgba(167, 139, 250, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(167, 139, 250, 0.45);
+    border-color: rgba(167, 139, 250, 0.7);
+  }
+}
+
+.titlebar-update-badge:hover {
+  background: rgba(167, 139, 250, 0.28);
+  color: #ffffff;
+  border-color: rgba(167, 139, 250, 0.8);
+  box-shadow: 0 0 16px rgba(167, 139, 250, 0.4);
+}
+
+.titlebar-update-badge .update-badge-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.titlebar-update-badge .update-icon {
+  width: 12px;
+  height: 12px;
+  color: #c084fc;
+}
+
+.titlebar-update-badge .update-dismiss-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: #a78bfa;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-left: 2px;
+  padding: 0;
+  line-height: 1;
+}
+
+.titlebar-update-badge .update-dismiss-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  transform: scale(1.12);
+}
+
 /* VPN Conflict Warning Banner */
 .conflict-banner {
   display: flex;
