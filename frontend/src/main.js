@@ -39,6 +39,7 @@ import {
   GetSystemLanguage,
   SelectWarpConfigFile,
   ImportWarpConfig,
+  SelectGeoRuleFile,
   GetCoreLogs,
   ClearCoreLogs
 } from '../wailsjs/go/main/App';
@@ -1095,6 +1096,22 @@ function closeAddGeoModal() {
   modalAddGeo.classList.remove('open');
 }
 
+document.getElementById('btn-browse-geo-file')?.addEventListener('click', async () => {
+  try {
+    const filePath = await SelectGeoRuleFile();
+    if (filePath) {
+      document.getElementById('input-geo-url').value = filePath;
+      const nameInput = document.getElementById('input-geo-name');
+      if (!nameInput.value.trim()) {
+        const baseName = filePath.split(/[\\/]/).pop().replace(/\.[^/.]+$/, '');
+        nameInput.value = baseName;
+      }
+    }
+  } catch (err) {
+    showToast(`Ошибка выбора файла: ${err}`);
+  }
+});
+
 document.getElementById('btn-close-geo-modal-x').addEventListener('click', closeAddGeoModal);
 document.getElementById('btn-cancel-geo-list').addEventListener('click', closeAddGeoModal);
 
@@ -1110,7 +1127,7 @@ document.getElementById('btn-confirm-add-geo-list').addEventListener('click', as
   }
 
   try {
-    showToast('Загрузка списка с GitHub...');
+    showToast('Добавление списка...');
     closeAddGeoModal();
     const added = await AddCustomList(name, url, action);
     showToast(`Список «${added.name}» добавлен (${added.count} правил)!`);

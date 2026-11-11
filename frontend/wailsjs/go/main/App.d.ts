@@ -56,6 +56,8 @@ export function SaveSettings(arg1:models.Settings):Promise<void>;
 
 export function SelectExeFile():Promise<string>;
 
+export function SelectGeoRuleFile():Promise<string>;
+
 export function SetActiveNodeID(arg1:string):Promise<void>;
 
 export function ToggleAppRule(arg1:string,arg2:string,arg3:boolean):Promise<void>;

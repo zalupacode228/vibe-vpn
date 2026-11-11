@@ -13,9 +13,9 @@
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![i18n](https://img.shields.io/badge/Language-RU%20%7C%20EN-blueviolet.svg)
 
-**A fast and lightweight Windows VPN client with per-application Split Tunneling, Cloudflare WARP (AmneziaWG / MASQUE), QR code import, and real-time process monitoring.**
+**A fast, modern, and lightweight Windows VPN client featuring per-application Split Tunneling, Cloudflare WARP (AmneziaWG / MASQUE) generator and config import, smart domain & IP/CIDR geo-routing, real-time connection log viewer, and network noise filtering.**
 
-[Download Latest Release](https://github.com/zalupacode228/vibe-vpn/releases) • [Features](#-key-features) • [Building from Source](#-building-from-source)
+[Download Latest Release](https://github.com/zalupacode228/vibe-vpn/releases/latest) • [Key Features](#-key-features) • [Building from Source](#-building-from-source)
 
 </div>
 
@@ -39,59 +39,75 @@
 
 ## ✨ Key Features
 
-- **⚡ Per-Application Split Tunneling**:
-  - Full control over which `.exe` applications route through VPN vs direct connection.
-  - Supports both **Whitelist** (proxy only selected apps) and **Blacklist** (proxy all except selected apps).
-  - Automatically lists running Windows processes with real-time process icons and names.
-  - Ability to pick any `.exe` file via file picker.
+### ⚡ Per-Application Split Tunneling
+- Total control over which `.exe` applications route through VPN vs direct connection:
+  - **Whitelist**: Route *only* selected apps through the VPN (browsers, messengers, games).
+  - **Blacklist**: Route everything through VPN *except* selected apps.
+  - **Global**: Route all computer traffic through the VPN tunnel.
+  - **Direct (Bypass)**: All traffic goes straight without encryption.
+- Automatically lists running Windows processes with their real-time system icons.
+- Ability to pick and add any `.exe` application via the native Windows file dialog.
 
-- **🛡️ Built-in Cloudflare WARP Generator**:
-  - **AmneziaWG (awg)**: DPI bypass using randomized junk packets (`jc`, `jmin`, `jmax`, `h1`–`h4`) to defeat active Russian DPI blocks.
+### 🛡️ Cloudflare WARP: Generator & Config Import (.conf)
+- **Built-in Generator**:
+  - **AmneziaWG (AWG)**: Anti-censorship obfuscation using randomized junk packets (`Jc`, `Jmin`, `Jmax`, `S1`–`S4`, `H1`–`H4`) to defeat DPI filters.
   - **MASQUE / HTTP/3**: Web traffic disguise over QUIC UDP port 443.
-  - Generates working Cloudflare client keys on the fly with automatic WireGuard peer configuration.
+  - One-click Cloudflare client key registration and peer negotiation.
+- **Config Import**:
+  - Load existing `.conf`, `.wireguard`, `.txt` config files via native file picker.
+  - Direct paste of raw config text.
+  - Full support for AmneziaWG obfuscation parameters and `Reserved` / `ClientID` formats (comma-separated, array, or Base64).
 
-- **📷 Universal QR-Code Importer**:
-  - **From Screen**: One-click screen capture with automatic QR code scanning.
-  - **From Clipboard (`Ctrl+V`)**: Instant detection of copied QR screenshot images or raw config text.
-  - **From File**: Drag-and-drop or file picker for PNG, JPG, WebP.
-  - **Live Webcam Feed**: Scan QR codes directly with your camera.
-  - Automatically recognizes single nodes, bulk node lists, or subscription links.
+### 📋 Connection Logs Viewer (Real-Time Core Logs)
+- Integrated sing-box live log viewer directly accessible from the dashboard.
+- **Smart Network Noise Filtering**: Automatically filters out malformed Windows DNS probes (NetBIOS, mDNS, NCSI network status checks) and high-frequency per-packet gaming traffic (CS2, etc.) — displaying only real connection events and actual errors.
+- Filter pill toggles: *All*, *Errors*, *Warnings*.
+- Auto-scroll, one-click copy to clipboard, and instant log clearing.
 
-- **🌐 Smart Routing & Custom Geo-Rules**:
-  - Built-in **Bypass RU** (auto-routes blocked services like YouTube, Discord, Twitter, Instagram).
-  - Built-in **AdBlock** (DNS-level ad and tracker blocking).
-  - Support for **AntiZapret** lists, custom GitHub raw lists (`.txt` / `.json`), and custom domain rules.
+### 🌐 Smart Routing & Geo-Rules (Domains & IP/CIDR Subnets)
+- **Bypass RU**: Automatically routes Russian domestic services (banks, government portals, social networks, domestic streaming) directly without VPN for maximum throughput.
+- **IP & CIDR Subnet Support**: Add custom lists of IP addresses and CIDR subnets (e.g. Russian IP blocks like `178.249.0.0/16` or blocked ranges) with configurable action: **Proxy (In Tunnel)** or **Direct (Bypass)**.
+- **Flexible List Sources**:
+  - Online via direct URL / GitHub Raw `.txt` or `.list`.
+  - Offline via local PC files using the **Browse...** button.
+- **AdBlock**: DNS-level ad, tracker, and telemetry blocking.
 
-- **🚀 Comprehensive Protocol Support**:
-  - VLESS (Reality, TLS, WebSocket, gRPC)
-  - VMess
-  - Shadowsocks (2022)
-  - Trojan
-  - Hysteria 2 / Hy2
-  - TUIC v5
-  - WireGuard & AmneziaWG (AWG)
+### 📷 Universal QR-Code Importer
+- **From Screen**: Instant screen capture with automatic QR code scanning.
+- **From Clipboard (`Ctrl+V`)**: Instant detection of copied QR screenshot images or raw config text.
+- **From File**: Drag-and-drop or file picker for PNG, JPG, WebP.
+- **Live Webcam Feed**: Scan QR codes directly with your camera.
+- Automatically recognizes single nodes, bulk node lists, and subscription links.
 
-- **📊 Live Telemetry & Process Tree**:
-  - Real-time 60 FPS bandwidth speed graph (Download / Upload).
-  - High-precision ping latency test with visual color indicators (green / yellow / red).
-  - Interactive **Connection Tree** grouped by active Windows process names, displaying exact destination IPs, routing rules, and bandwidth.
+### 🚀 Modern Protocol Support
+- VLESS (Reality, TLS, WebSocket, gRPC)
+- VMess
+- Shadowsocks (2022)
+- Trojan
+- Hysteria 2 / Hy2
+- TUIC v5
+- WireGuard & AmneziaWG (AWG)
 
-- **🌍 Bilingual Localization & System Auto-Detection**:
-  - Automatically detects Windows system language at startup (Russian for RU/CIS systems, English for rest of world).
-  - Instant on-the-fly language switching in Settings without restarting the application.
+### 📊 Live Telemetry & Process Tree
+- Real-time 60 FPS bandwidth speed graph (Download / Upload).
+- High-precision ping latency test with visual color indicators (green / yellow / red).
+- Interactive **Connection Tree** grouped by active Windows process names, displaying exact destination IPs, routing rules, and bandwidth per app.
 
-- **🎨 Industrial Design & Privacy**:
-  - Material 3 Dark Glassmorphism interface.
-  - Responsive layout (desktop navigation rail + adaptive mobile/compact bottom navigation).
-  - **Privacy Blur Mode**: One-click blur of IP addresses, server domains, and private keys for safe livestreaming and screenshots.
-  - Minimization to system tray with quick-actions menu.
+### 🌍 Bilingual Localization & System Auto-Detection
+- Automatically detects Windows system language at startup (Russian for RU/CIS systems, English for rest of world).
+- Instant on-the-fly language switching in Settings without restarting the application.
+
+### 🎨 Design & Privacy
+- Modern Material 3 Dark Glassmorphism interface with branded glowing shield icon.
+- Minimization to system tray with quick-actions menu.
+- **Privacy Blur Mode**: One-click blur of IP addresses, server domains, and private keys for safe livestreaming and screenshots.
 
 ---
 
 ## 🚀 Download & Installation
 
-1. Go to the [Releases](https://github.com/zalupacode228/vibe-vpn/releases) page.
-2. Download the latest `VibeVPN-Windows-x64.exe`.
+1. Go to the [Releases](https://github.com/zalupacode228/vibe-vpn/releases/latest) page.
+2. Download the latest `VibeVPN-v1.0.2-Windows-x64.exe` (or `VPN.exe`).
 3. Run the executable.
    > **Note**: Requires Windows 10 or 11 (64-bit). Administrator privileges are required to create the TUN network adapter (`wintun.dll`).
 
@@ -111,11 +127,9 @@
 ### Development Mode
 To run with live hot-reloading for frontend and Go backend:
 ```powershell
-# Clone the repository
 git clone https://github.com/zalupacode228/vibe-vpn.git
 cd vibe-vpn
 
-# Run in live development mode
 wails dev
 ```
 
@@ -135,49 +149,38 @@ build/bin/VPN.exe
 
 ```
 vibe-go/
-├── app.go                 # Wails Go application controller & Windows API bindings
-├── main.go                # Application entrypoint & Wails configuration
+├── app.go                 # Wails Go controller & Windows API bindings
+├── main.go                # Application entrypoint, single-instance mutex & window config
 ├── assets/
-│   ├── core/              # Embedded monolithic core (sing-box.exe + wintun.dll)
-│   └── screenshots/       # UI showcase images
+│   ├── core/              # Embedded core (sing-box.exe with AWG + wintun.dll)
+│   └── screenshots/       # Documentation screenshots
+├── build/
+│   ├── appicon.png        # Branded high-res vector shield icon (1024x1024)
+│   └── windows/
+│       └── icon.ico       # Multi-size Windows icon (16–256px) for taskbar & .exe
 ├── pkg/
-│   ├── models/            # Core data types (Nodes, Settings, Rules, Subscriptions)
-│   ├── singbox/           # Sing-box JSON generator & process controller
+│   ├── models/            # Core data structures (Nodes, Settings, Geo-rules, Subscriptions)
+│   ├── singbox/           # Sing-box JSON generator, routing rules & process controller
 │   ├── procmon/           # Windows active processes & exe icon extractor
-│   ├── storage/           # Local state storage in %APPDATA%\VPN
-│   ├── subs/              # Subscription parser & base64/clash decoder
+│   ├── storage/           # State persistence in %APPDATA%\VPN
+│   ├── subs/              # Subscription parser & Base64/Clash decoder
 │   ├── pinger/            # Concurrent TCP/ICMP ping engine
-│   ├── warp/              # Cloudflare WARP registration (AWG & MASQUE)
-│   └── tray/              # Native Windows system tray integration
-└── frontend/              # Ultra-fast Vanilla JS + Vite frontend
+│   ├── warp/              # Cloudflare WARP registration (AWG & MASQUE) & config parser
+│   └── tray/              # Windows system tray integration
+└── frontend/              # Lightweight frontend (Vanilla JS + Vite)
     ├── src/
-    │   ├── main.js        # UI orchestration & state management
-    │   ├── i18n.js        # Bilingual dictionary & auto-detection
-    │   └── style.css      # Material 3 Dark Glassmorphism styles
-    └── index.html         # Application single-page DOM
+    │   ├── main.js        # UI logic, log parsing & event listeners
+    │   ├── i18n.js        # Localization dictionary & auto-detection
+    │   └── style.css      # Dark Glassmorphism styles
+    └── index.html         # Application layout
 ```
-
----
-
-## 🤝 Contributing
-
-Contributions, bug reports, and feature requests are welcome!
-Feel free to open an issue or submit a pull request.
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
 
 ---
 
 ## 📄 License
 
-Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
-
----
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
 
 <div align="center">
-Made with ❤️ using Go, Wails v2, and sing-box.
+Built with ❤️ using Go, Wails v2, and sing-box.
 </div>
