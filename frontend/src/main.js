@@ -1502,35 +1502,75 @@ function stripAnsi(str) {
     .replace(/[\u001b\x1b]/g, '');
 }
 
-function parseSingboxLogLine(raw) {
-  const clean = stripAnsi(raw).trim();
-  if (!clean) return null;
+function isNoiseLogLine(line) {
+  if (!line) return true;
+  // Local Windows DNS probe & malformed packet noise
+  if (line.includes('router: process DNS packet: unpack request') ||
+      line.includes('dns: bad question') ||
+      line.includes('dns: overflow unpacking') ||
+      line.includes('dns: bad rdata')) {
+    return true;
+  }
+  // Elevated run notice from AppData
+  if (line.includes('lxd: running elevated from') ||
+      line.includes('must not be writable by a non-administrative principal') ||
+      line.includes('starting anyway; the service would refuse this binary') ||
+      line.includes('sing-box lxd --service=install')) {
+    return true;
+  }
+  // High-frequency per-packet routing traces (games, background Windows telemetry, torrents)
+  if (line.includes('router: found process path:') ||
+      line.includes('inbound packet connection') ||
+      line.includes('inbound DNS packet') ||
+      line.includes('outbound packet connection') ||
+      line.includes('inbound/tun[tun-in]: inbound connection') ||
+      line.includes('outbound/direct[direct]: outbound connection')) {
+    return true;
+  }
+  return false;
+}
 
-  let level = 'info';
+function parseSingboxLogLine(raw) {
+  let clean = stripAnsi(raw).trim();
+  if (!clean || isNoiseLogLine(clean)) return null;
+
+  let level = 'INFO';
   const upper = clean.toUpperCase();
   if (upper.includes('ERROR') || upper.includes('FATAL') || upper.includes('PANIC')) {
-    level = 'error';
+    level = 'ERROR';
   } else if (upper.includes('WARN')) {
-    level = 'warn';
+    level = 'WARN';
   }
 
-  // Parse sing-box format:
-  // e.g.: "+0500 2026-11-10 18:39:36 ERROR [2452935442 14.99s] connection: open connection to 142.251.153.4:443..."
+  // 1. Extract timestamp (HH:mm:ss) from start if present
   let timeStr = '';
-  let tag = '';
-  let msg = clean;
-
-  const m = clean.match(/^(?:[+-]\d{4}\s+)?(?:\d{4}-\d{2}-\d{2}\s+)?(\d{2}:\d{2}:\d{2})\s*(?:ERROR|WARN|INFO|DEBUG|FATAL)?\s*(?:\[([^\]]*)\])?\s*(.*)$/i);
-  if (m) {
-    timeStr = m[1] || '';
-    tag = m[2] || '';
-    msg = m[3] || clean;
+  const timeMatch = clean.match(/^(?:[+-]\d{4}\s+)?(?:\d{4}-\d{2}-\d{2}\s+)?(\d{2}:\d{2}:\d{2})/);
+  if (timeMatch) {
+    timeStr = timeMatch[1];
+    clean = clean.substring(timeMatch[0].length).trim();
   }
 
-  // Remove redundant level prefixes from start of message
-  msg = msg.replace(/^(?:ERROR|WARN|INFO|DEBUG)\s*:?\s*/i, '').trim();
+  // 2. Remove level word if at start
+  clean = clean.replace(/^(?:ERROR|WARN|INFO|DEBUG|FATAL)\s*:?\s*/i, '').trim();
 
-  return { level, timeStr, tag, msg };
+  // 3. Strip internal connection tracker IDs like [1092837411 14.99s] or [1092837411]
+  clean = clean.replace(/^\[\d+(\s+[\d\.]+s)?\]\s*/i, '');
+  clean = clean.replace(/\s*\[\d+(\s+[\d\.]+s)?\]\s*/g, ' ');
+
+  // 4. Clean up component names: "[tun-in] " -> "tun-in: "
+  clean = clean.replace(/^\[([a-zA-Z0-9_-]+)\]\s*/, '$1: ');
+
+  // 5. Clean up "using outbound/hysteria2[proxy-out]" -> "(hysteria2)"
+  clean = clean.replace(/using outbound\/([a-zA-Z0-9_-]+)(?:\[[^\]]*\])?/g, '($1)');
+  clean = clean.replace(/outbound\/([a-zA-Z0-9_-]+)\[proxy-out\]/g, '$1');
+
+  clean = clean.trim();
+
+  return {
+    level,
+    timeStr: timeStr || '--:--:--',
+    msg: clean
+  };
 }
 
 function openLogsModal() {
@@ -1587,14 +1627,14 @@ function renderFormattedLogs(text) {
     const parsed = parseSingboxLogLine(rawLine);
     if (!parsed) continue;
 
-    if (parsed.level === 'error') {
+    if (parsed.level === 'ERROR') {
       errorCount++;
-    } else if (parsed.level === 'warn') {
+    } else if (parsed.level === 'WARN') {
       warnCount++;
     }
 
-    if (currentLogFilter === 'error' && parsed.level !== 'error') continue;
-    if (currentLogFilter === 'warn' && parsed.level !== 'warn') continue;
+    if (currentLogFilter === 'error' && parsed.level !== 'ERROR') continue;
+    if (currentLogFilter === 'warn' && parsed.level !== 'WARN') continue;
 
     parsedLines.push(parsed);
   }
@@ -1610,20 +1650,12 @@ function renderFormattedLogs(text) {
   }
 
   const html = parsedLines.map(item => {
-    let badgeHtml = '';
-    if (item.level === 'error') {
-      badgeHtml = `<span class="log-badge badge-error">ERROR</span>`;
-    } else if (item.level === 'warn') {
-      badgeHtml = `<span class="log-badge badge-warn">WARN</span>`;
-    } else {
-      badgeHtml = `<span class="log-badge badge-info">INFO</span>`;
-    }
-
     const timeHtml = `<span class="log-time">${escapeHtml(item.timeStr || '--:--:--')}</span>`;
-    const tagHtml = item.tag ? `<span class="log-tag-badge">[${escapeHtml(item.tag)}]</span>` : '';
-    const msgHtml = `<span class="log-msg">${tagHtml}${escapeHtml(item.msg)}</span>`;
+    const levelHtml = `<span class="log-level">${escapeHtml(item.level)}</span>`;
+    const msgHtml = `<span class="log-msg">${escapeHtml(item.msg)}</span>`;
+    const lvlClass = item.level.toLowerCase();
 
-    return `<div class="log-row log-${item.level}">${timeHtml}${badgeHtml}${msgHtml}</div>`;
+    return `<div class="log-row log-${lvlClass}">${timeHtml}${levelHtml}${msgHtml}</div>`;
   }).join('');
 
   const shouldScroll = chkLogsAutoscroll?.checked;

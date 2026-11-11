@@ -360,6 +360,36 @@ func (c *Controller) ClearLogs() error {
 
 var ansiRegex = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x1b0?\[[0-9;]*[a-zA-Z]?`)
 
+func isNoiseLogLine(line string) bool {
+	// Windows local DNS probe & malformed packet noise
+	if strings.Contains(line, "router: process DNS packet: unpack request") ||
+		strings.Contains(line, "dns: bad question") ||
+		strings.Contains(line, "dns: overflow unpacking") ||
+		strings.Contains(line, "dns: bad rdata") {
+		return true
+	}
+
+	// Security path permission notice when running elevated from AppData
+	if strings.Contains(line, "lxd: running elevated from") ||
+		strings.Contains(line, "must not be writable by a non-administrative principal") ||
+		strings.Contains(line, "starting anyway; the service would refuse this binary") ||
+		strings.Contains(line, "sing-box lxd --service=install") {
+		return true
+	}
+
+	// High-frequency per-packet routing traces (games, background Windows telemetry, torrents)
+	if strings.Contains(line, "router: found process path:") ||
+		strings.Contains(line, "inbound packet connection") ||
+		strings.Contains(line, "inbound DNS packet") ||
+		strings.Contains(line, "outbound packet connection") ||
+		strings.Contains(line, "inbound/tun[tun-in]: inbound connection") ||
+		strings.Contains(line, "outbound/direct[direct]: outbound connection") {
+		return true
+	}
+
+	return false
+}
+
 func readLastLines(filePath string, n int) string {
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -375,7 +405,7 @@ func readLastLines(filePath string, n int) string {
 		raw := scanner.Text()
 		clean := ansiRegex.ReplaceAllString(raw, "")
 		clean = strings.TrimSpace(clean)
-		if clean == "" {
+		if clean == "" || isNoiseLogLine(clean) {
 			continue
 		}
 		lines = append(lines, clean)
