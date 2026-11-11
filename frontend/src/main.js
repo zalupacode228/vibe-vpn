@@ -2498,6 +2498,7 @@ const headerUpdateBadge = document.getElementById('header-update-badge');
 const headerUpdateText = document.getElementById('header-update-text');
 const btnDismissHeaderUpdate = document.getElementById('btn-dismiss-header-update');
 const modalAppUpdate = document.getElementById('modal-app-update');
+const updateModalActions = document.getElementById('update-modal-actions');
 const btnCheckUpdate = document.getElementById('btn-check-update');
 const btnCloseAppUpdate = document.getElementById('btn-close-app-update');
 const btnCancelUpdate = document.getElementById('btn-cancel-update');
@@ -2561,6 +2562,67 @@ btnDismissHeaderUpdate?.addEventListener('click', (e) => {
   }
 });
 
+function formatReleaseNotes(raw, lang) {
+  if (!raw) return '';
+  let text = raw;
+
+  // Split language if bilingual markers present
+  const isEn = lang === 'en';
+  if (text.includes('---')) {
+    const parts = text.split('---');
+    if (isEn && parts.length > 1) {
+      text = parts[1];
+    } else {
+      text = parts[0];
+    }
+  }
+
+  // Strip headers like "### 🇷🇺 Что нового:" or "### What's New:"
+  text = text.replace(/^#+.*$/gm, '').trim();
+
+  const lines = text.split('\n');
+  const items = [];
+
+  for (let line of lines) {
+    line = line.trim();
+    if (!line || line.startsWith('---')) continue;
+
+    if (line.startsWith('- ') || line.startsWith('* ')) {
+      const content = line.substring(2).trim();
+      const boldMatch = content.match(/^\*\*(.*?)\*\*:?\s*(.*)$/);
+      if (boldMatch) {
+        const title = boldMatch[1].trim();
+        let desc = boldMatch[2].trim();
+        desc = desc.replace(/`([^`]+)`/g, '<code class="update-code">$1</code>');
+        items.push(`
+          <li class="update-note-item">
+            <span class="update-note-bullet"></span>
+            <div class="update-note-content">
+              <strong class="update-note-strong">${title}</strong>
+              <span class="update-note-text">: ${desc}</span>
+            </div>
+          </li>
+        `);
+      } else {
+        items.push(`
+          <li class="update-note-item">
+            <span class="update-note-bullet"></span>
+            <div class="update-note-content">
+              <span class="update-note-text">${content}</span>
+            </div>
+          </li>
+        `);
+      }
+    }
+  }
+
+  if (items.length > 0) {
+    return `<ul class="update-notes-list">${items.join('')}</ul>`;
+  }
+
+  return `<div style="font-size: 13px; color: #cbd5e1; line-height: 1.5;">${escapeHtml(text).replace(/\n/g, '<br/>')}</div>`;
+}
+
 function openUpdateModalWithInfo(info) {
   if (!info) return;
   pendingUpdateInfo = info;
@@ -2571,14 +2633,15 @@ function openUpdateModalWithInfo(info) {
   if (updateModalSize) updateModalSize.innerText = sizeMb;
 
   if (updateModalNotes) {
-    updateModalNotes.innerText = info.release_notes || t('modal_update_subtitle');
+    const currentLang = typeof getCurrentLanguage === 'function' ? getCurrentLanguage() : 'ru';
+    updateModalNotes.innerHTML = formatReleaseNotes(info.release_notes || t('modal_update_subtitle'), currentLang);
   }
 
   if (updateProgressSection) updateProgressSection.style.display = 'none';
   if (updateProgressBar) updateProgressBar.style.width = '0%';
+  if (updateModalActions) updateModalActions.style.display = 'flex';
   if (btnConfirmUpdate) {
     btnConfirmUpdate.disabled = false;
-    btnConfirmUpdate.style.display = 'inline-flex';
   }
   if (btnCancelUpdate) btnCancelUpdate.style.display = 'inline-flex';
   if (btnCloseAppUpdate) btnCloseAppUpdate.style.display = 'inline-flex';
@@ -2646,8 +2709,7 @@ btnConfirmUpdate?.addEventListener('click', async () => {
   }
 
   isUpdating = true;
-  btnConfirmUpdate.disabled = true;
-  if (btnCancelUpdate) btnCancelUpdate.style.display = 'none';
+  if (updateModalActions) updateModalActions.style.display = 'none';
   if (btnCloseAppUpdate) btnCloseAppUpdate.style.display = 'none';
   if (updateProgressSection) updateProgressSection.style.display = 'block';
   if (updateProgressLabel) updateProgressLabel.innerText = t('update_downloading');
@@ -2659,7 +2721,8 @@ btnConfirmUpdate?.addEventListener('click', async () => {
     if (updateProgressLabel) updateProgressLabel.innerText = t('update_restarting');
   } catch (err) {
     isUpdating = false;
-    btnConfirmUpdate.disabled = false;
+    if (updateModalActions) updateModalActions.style.display = 'flex';
+    if (btnConfirmUpdate) btnConfirmUpdate.disabled = false;
     if (btnCancelUpdate) btnCancelUpdate.style.display = 'inline-flex';
     if (btnCloseAppUpdate) btnCloseAppUpdate.style.display = 'inline-flex';
     if (updateProgressSection) updateProgressSection.style.display = 'none';

@@ -2594,3 +2594,142 @@ body {
 .spinning {
   animation: spin 1s linear infinite;
 }
+
+/* Update Modal Polish */
+.modal-card-update {
+  max-width: 520px;
+}
+
+.badge-version {
+  background: rgba(167, 139, 250, 0.2);
+  color: #c4b5fd;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+}
+
+.update-size-badge {
+  font-size: 11px;
+  color: #c4b5fd;
+  background: rgba(167, 139, 250, 0.12);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid rgba(167, 139, 250, 0.25);
+}
+
+.update-notes-box {
+  background: #14101e;
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 12px;
+  padding: 14px 16px;
+  max-height: 210px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #e2e8f0;
+}
+
+.update-notes-box::-webkit-scrollbar {
+  width: 5px;
+}
+.update-notes-box::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+.update-notes-box::-webkit-scrollbar-thumb {
+  background: rgba(167, 139, 250, 0.35);
+  border-radius: 4px;
+}
+.update-notes-box::-webkit-scrollbar-thumb:hover {
+  background: rgba(167, 139, 250, 0.7);
+}
+
+.update-notes-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.update-note-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.update-note-bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a78bfa;
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.9);
+  margin-top: 7px;
+  flex-shrink: 0;
+}
+
+.update-note-content {
+  flex: 1;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #cbd5e1;
+}
+
+.update-note-strong {
+  color: #f1f5f9;
+  font-weight: 600;
+}
+
+.update-note-text {
+  color: #94a3b8;
+}
+
+.update-code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 11px;
+  color: #c4b5fd;
+}
+
+/* Progress Card in Modal */
+.update-progress-card {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: rgba(167, 139, 250, 0.08);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  border-radius: 10px;
+}
+
+.update-bar-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.update-bar-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed, #c084fc);
+  border-radius: 4px;
+  transition: width 0.15s ease;
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.5);
+}
+
+.update-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(167, 139, 250, 0.2);
+  border-top-color: #a78bfa;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
