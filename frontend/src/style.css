@@ -2385,10 +2385,13 @@ body {
 
 .log-line {
   white-space: pre-wrap;
-  word-break: break-all;
-  padding: 2px 0;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  padding: 3px 0;
   display: flex;
+  align-items: flex-start;
   gap: 8px;
+  line-height: 1.45;
 }
 
 .log-line.log-error {
@@ -2413,12 +2416,13 @@ body {
 
 .log-level-badge {
   font-weight: 700;
-  padding: 0 4px;
-  border-radius: 3px;
+  padding: 1px 5px;
+  border-radius: 4px;
   font-size: 10px;
   height: fit-content;
   align-self: flex-start;
   flex-shrink: 0;
+  letter-spacing: 0.3px;
 }
 
 .log-level-badge.badge-error {
@@ -2438,11 +2442,24 @@ body {
 
 .log-time {
   color: #6b7280;
+  font-size: 10px;
+  font-weight: 500;
   flex-shrink: 0;
+  padding-top: 1px;
+}
+
+.log-tag {
+  color: #9ca3af;
+  font-size: 10px;
+  flex-shrink: 0;
+  opacity: 0.75;
 }
 
 .log-msg {
   flex: 1;
+  min-width: 0;
+  word-break: normal;
+  overflow-wrap: anywhere;
 }
 
 .log-empty-msg {

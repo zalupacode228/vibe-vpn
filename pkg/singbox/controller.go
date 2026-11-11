@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -90,7 +91,7 @@ func (c *Controller) Start(configBytes []byte) error {
 
 	coreDir := filepath.Dir(c.corePath)
 	logPath := filepath.Join(cfgDir, "core.log")
-	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		logFile = nil
 	}
@@ -357,6 +358,8 @@ func (c *Controller) ClearLogs() error {
 	return os.WriteFile(logPath, []byte(""), 0644)
 }
 
+var ansiRegex = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x1b0?\[[0-9;]*[a-zA-Z]?`)
+
 func readLastLines(filePath string, n int) string {
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -369,7 +372,13 @@ func readLastLines(filePath string, n int) string {
 	buf := make([]byte, 64*1024)
 	scanner.Buffer(buf, 1024*1024)
 	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
+		raw := scanner.Text()
+		clean := ansiRegex.ReplaceAllString(raw, "")
+		clean = strings.TrimSpace(clean)
+		if clean == "" {
+			continue
+		}
+		lines = append(lines, clean)
 		if len(lines) > n {
 			lines = lines[1:]
 		}
