@@ -84,6 +84,13 @@
             <div class="hero-status-row">
               <span id="hero-status-dot" class="status-dot"></span>
               <span id="hero-status-text" class="hero-status-text" data-i18n="status_disconnected">Отключено</span>
+              <button id="btn-hero-logs" class="btn-hero-logs" title="Журнал и логи подключения">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="4 17 10 11 4 5"></polyline>
+                  <line x1="12" y1="19" x2="20" y2="19"></line>
+                </svg>
+                <span data-i18n="btn_logs">Логи</span>
+              </button>
             </div>
             <div id="hero-node-btn" class="hero-node-info" title="Нажмите для выбора сервера">
               <span id="hero-country-flag" class="node-flag-badge"></span>
@@ -556,39 +563,117 @@
     </div>
   </div>
 
-  <!-- Modal: WARP Type Selection (AmneziaWG vs MASQUE) -->
+  <!-- Modal: WARP & WireGuard (Generator vs Import) -->
   <div id="modal-warp" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-header">
         <div>
-          <h2 class="modal-title" data-i18n="modal_warp_title">Создание Cloudflare WARP</h2>
-          <p class="modal-subtitle" data-i18n="modal_warp_subtitle">Выберите протокол подключения для генерации конфига:</p>
+          <h2 class="modal-title" data-i18n="modal_warp_title">Cloudflare WARP & WireGuard</h2>
+          <p class="modal-subtitle" data-i18n="modal_warp_subtitle">Генерация профиля Cloudflare или импорт готового конфига</p>
         </div>
         <button id="btn-close-warp" class="modal-close-btn" title="Закрыть">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
 
-      <div class="warp-options">
-        <div class="warp-opt-card" id="opt-warp-awg">
-          <div class="warp-opt-header">
-            <span class="warp-opt-title" data-i18n="warp_proto_awg">Обычный (AmneziaWG)</span>
-            <span class="badge-rec">Рекомендуется</span>
-          </div>
-          <div class="warp-opt-desc">Маскировка заголовков WireGuard (Jc, H1-H4, порт 500) для обхода DPI</div>
-        </div>
+      <!-- Segmented Subtabs: Generator vs File/Text Import -->
+      <div class="subtabs-bar" style="margin-bottom: 14px;">
+        <button id="tab-warp-gen" class="subtab-btn active" type="button" data-i18n="tab_warp_generate">⚡ Генератор Cloudflare</button>
+        <button id="tab-warp-import" class="subtab-btn" type="button" data-i18n="tab_warp_import">📄 Импорт файла / текста (.conf)</button>
+      </div>
 
-        <div class="warp-opt-card masque" id="opt-warp-masque">
-          <div class="warp-opt-header">
-            <span class="warp-opt-title" data-i18n="warp_proto_masque">MASQUE (HTTP/3)</span>
-            <span class="badge-quic">QUIC</span>
+      <!-- Pane 1: Generator -->
+      <div id="pane-warp-gen" class="warp-pane active">
+        <div class="warp-options">
+          <div class="warp-opt-card" id="opt-warp-awg">
+            <div class="warp-opt-header">
+              <span class="warp-opt-title" data-i18n="warp_proto_awg">Обычный (AmneziaWG)</span>
+              <span class="badge-rec">Рекомендуется</span>
+            </div>
+            <div class="warp-opt-desc">Маскировка заголовков WireGuard (Jc, H1-H4, порт 500) для обхода DPI</div>
           </div>
-          <div class="warp-opt-desc">CONNECT-IP туннель поверх QUIC с шифрованием и маскировкой под HTTPS</div>
+
+          <div class="warp-opt-card masque" id="opt-warp-masque">
+            <div class="warp-opt-header">
+              <span class="warp-opt-title" data-i18n="warp_proto_masque">MASQUE (HTTP/3)</span>
+              <span class="badge-quic">QUIC</span>
+            </div>
+            <div class="warp-opt-desc">CONNECT-IP туннель поверх QUIC с шифрованием и маскировкой под HTTPS</div>
+          </div>
         </div>
       </div>
 
-      <div class="modal-actions">
+      <!-- Pane 2: File / Text Import -->
+      <div id="pane-warp-import" class="warp-pane" style="display: none;">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <button id="btn-warp-pick-file" class="btn-pill primary" type="button" style="width: 100%; justify-content: center; gap: 8px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+            <span data-i18n="btn_warp_pick_file">Выбрать файл .conf</span>
+          </button>
+
+          <div style="text-align: center; font-size: 11px; color: var(--on-surface-muted); margin: -4px 0;">— или вставьте текст конфигурации —</div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <textarea id="input-warp-conf-text" class="form-input form-textarea tabular" rows="6" placeholder="[Interface]&#10;PrivateKey = ...&#10;Address = 172.16.0.2/32&#10;&#10;[Peer]&#10;PublicKey = ...&#10;Endpoint = 162.159.192.1:2408&#10;Reserved = 1, 2, 3" data-i18n-placeholder="warp_import_placeholder" style="resize: vertical; font-size: 11px; line-height: 1.4;"></textarea>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" data-i18n="warp_custom_name_label">Название узла (необязательно)</label>
+            <input id="input-warp-conf-name" class="form-input" type="text" placeholder="WARP / WireGuard" />
+          </div>
+
+          <button id="btn-warp-import-submit" class="btn-pill primary" type="button" style="width: 100%; justify-content: center; margin-top: 4px;">
+            <span data-i18n="btn_import_warp_submit">Импортировать в список</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 16px;">
         <button id="btn-cancel-warp" class="btn-pill" data-i18n="btn_cancel">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Connection Logs -->
+  <div id="modal-logs" class="modal-overlay">
+    <div class="modal-card modal-card-large">
+      <div class="modal-header">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h2 class="modal-title" data-i18n="modal_logs_title">Журнал подключения (Логи)</h2>
+            <span id="logs-live-badge" class="badge-live">● LIVE</span>
+          </div>
+          <p class="modal-subtitle" data-i18n="modal_logs_subtitle">События ядра sing-box, рукопожатия и ошибки подключения</p>
+        </div>
+        <button id="btn-close-logs" class="modal-close-btn" title="Закрыть">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding-top: 4px;">
+        <div class="logs-toolbar">
+          <div class="logs-toolbar-left">
+            <button id="btn-logs-filter-all" class="logs-filter-pill active" data-filter="all" data-i18n="logs_filter_all">Все</button>
+            <button id="btn-logs-filter-error" class="logs-filter-pill error" data-filter="error"><span data-i18n="logs_filter_error">Ошибки</span> (<span id="logs-count-error">0</span>)</button>
+            <button id="btn-logs-filter-warn" class="logs-filter-pill warn" data-filter="warn"><span data-i18n="logs_filter_warn">Предупреждения</span> (<span id="logs-count-warn">0</span>)</button>
+          </div>
+          <div class="logs-toolbar-right">
+            <label class="logs-autoscroll-label">
+              <input type="checkbox" id="chk-logs-autoscroll" checked />
+              <span data-i18n="logs_autoscroll">Автоскролл</span>
+            </label>
+            <button id="btn-copy-logs" class="btn-pill btn-pill-sm" title="Копировать весь лог">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span data-i18n="btn_copy">Копировать</span>
+            </button>
+            <button id="btn-clear-logs" class="btn-pill btn-pill-sm" title="Очистить лог">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              <span data-i18n="btn_clear">Очистить</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="logs-terminal" class="logs-terminal tabular"></div>
       </div>
     </div>
   </div>

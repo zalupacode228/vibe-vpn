@@ -342,6 +342,21 @@ func (c *Controller) GetConnections() ([]models.ConnectionGroup, error) {
 	return result, nil
 }
 
+func (c *Controller) GetLogs(maxLines int) string {
+	if maxLines <= 0 {
+		maxLines = 250
+	}
+	cfgDir := filepath.Dir(c.configPath)
+	logPath := filepath.Join(cfgDir, "core.log")
+	return readLastLines(logPath, maxLines)
+}
+
+func (c *Controller) ClearLogs() error {
+	cfgDir := filepath.Dir(c.configPath)
+	logPath := filepath.Join(cfgDir, "core.log")
+	return os.WriteFile(logPath, []byte(""), 0644)
+}
+
 func readLastLines(filePath string, n int) string {
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -351,15 +366,18 @@ func readLastLines(filePath string, n int) string {
 
 	var lines []string
 	scanner := bufio.NewScanner(f)
+	buf := make([]byte, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 		if len(lines) > n {
 			lines = lines[1:]
 		}
 	}
-	res := ""
+	var sb strings.Builder
 	for _, l := range lines {
-		res += l + "\n"
+		sb.WriteString(l)
+		sb.WriteByte('\n')
 	}
-	return res
+	return sb.String()
 }

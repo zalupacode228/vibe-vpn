@@ -2233,3 +2233,221 @@ body {
   border-color: #d0bcff;
   background: rgba(208, 188, 255, 0.06);
 }
+
+/* ==========================================================================
+   LOGS VIEWER & WARP IMPORT STYLES
+   ========================================================================== */
+
+.btn-hero-logs {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-pill);
+  color: var(--on-surface-variant);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  margin-left: 4px;
+}
+
+.btn-hero-logs:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--on-surface);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn-hero-logs.has-error {
+  border-color: rgba(248, 113, 113, 0.6);
+  background: rgba(248, 113, 113, 0.15);
+  color: #fca5a5;
+}
+
+.modal-card.modal-card-large {
+  max-width: 680px;
+  width: 90%;
+  max-height: 84vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-card-large .modal-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.badge-live {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 6px;
+  padding: 2px 6px;
+  letter-spacing: 0.5px;
+}
+
+.logs-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.logs-toolbar-left,
+.logs-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logs-filter-pill {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--on-surface-variant);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.logs-filter-pill:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--on-surface);
+}
+
+.logs-filter-pill.active {
+  background: rgba(208, 188, 255, 0.2);
+  border-color: #d0bcff;
+  color: #d0bcff;
+}
+
+.logs-filter-pill.error.active {
+  background: rgba(248, 113, 113, 0.2);
+  border-color: #f87171;
+  color: #f87171;
+}
+
+.logs-filter-pill.warn.active {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
+.logs-autoscroll-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  user-select: none;
+}
+
+.logs-autoscroll-label input {
+  cursor: pointer;
+  accent-color: #d0bcff;
+}
+
+.btn-pill-sm {
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  gap: 4px !important;
+}
+
+.logs-terminal {
+  flex: 1;
+  min-height: 280px;
+  max-height: 420px;
+  overflow-y: auto;
+  overflow-x: auto;
+  background: #0d0b14;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.55;
+  color: #d1d5db;
+  user-select: text;
+}
+
+.log-line {
+  white-space: pre-wrap;
+  word-break: break-all;
+  padding: 2px 0;
+  display: flex;
+  gap: 8px;
+}
+
+.log-line.log-error {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.08);
+  border-left: 2px solid #ef4444;
+  padding-left: 6px;
+  margin-left: -6px;
+}
+
+.log-line.log-warn {
+  color: #fde047;
+  background: rgba(234, 179, 8, 0.06);
+  border-left: 2px solid #eab308;
+  padding-left: 6px;
+  margin-left: -6px;
+}
+
+.log-line.log-info {
+  color: #93c5fd;
+}
+
+.log-level-badge {
+  font-weight: 700;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  height: fit-content;
+  align-self: flex-start;
+  flex-shrink: 0;
+}
+
+.log-level-badge.badge-error {
+  background: #ef4444;
+  color: #fff;
+}
+
+.log-level-badge.badge-warn {
+  background: #eab308;
+  color: #000;
+}
+
+.log-level-badge.badge-info {
+  background: rgba(147, 197, 253, 0.2);
+  color: #93c5fd;
+}
+
+.log-time {
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.log-msg {
+  flex: 1;
+}
+
+.log-empty-msg {
+  color: var(--on-surface-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 40px 10px;
+}
