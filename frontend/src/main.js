@@ -1494,6 +1494,45 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+function stripAnsi(str) {
+  if (!str) return '';
+  return str
+    .replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '')
+    .replace(/[\u001b\x1b]0?\[[0-9;]*[a-zA-Z]?/g, '')
+    .replace(/[\u001b\x1b]/g, '');
+}
+
+function parseSingboxLogLine(raw) {
+  const clean = stripAnsi(raw).trim();
+  if (!clean) return null;
+
+  let level = 'info';
+  const upper = clean.toUpperCase();
+  if (upper.includes('ERROR') || upper.includes('FATAL') || upper.includes('PANIC')) {
+    level = 'error';
+  } else if (upper.includes('WARN')) {
+    level = 'warn';
+  }
+
+  // Parse sing-box format:
+  // e.g.: "+0500 2026-11-10 18:39:36 ERROR [2452935442 14.99s] connection: open connection to 142.251.153.4:443..."
+  let timeStr = '';
+  let tag = '';
+  let msg = clean;
+
+  const m = clean.match(/^(?:[+-]\d{4}\s+)?(?:\d{4}-\d{2}-\d{2}\s+)?(\d{2}:\d{2}:\d{2})\s*(?:ERROR|WARN|INFO|DEBUG|FATAL)?\s*(?:\[([^\]]*)\])?\s*(.*)$/i);
+  if (m) {
+    timeStr = m[1] || '';
+    tag = m[2] || '';
+    msg = m[3] || clean;
+  }
+
+  // Remove redundant level prefixes from start of message
+  msg = msg.replace(/^(?:ERROR|WARN|INFO|DEBUG)\s*:?\s*/i, '').trim();
+
+  return { level, timeStr, tag, msg };
+}
+
 function openLogsModal() {
   btnHeroLogs?.classList.remove('has-error');
   if (modalLogs) {
@@ -1545,23 +1584,19 @@ function renderFormattedLogs(text) {
   const parsedLines = [];
 
   for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line) continue;
+    const parsed = parseSingboxLogLine(rawLine);
+    if (!parsed) continue;
 
-    let level = 'info';
-    const upper = line.toUpperCase();
-    if (upper.includes('ERROR') || upper.includes('FATAL') || upper.includes('PANIC')) {
-      level = 'error';
+    if (parsed.level === 'error') {
       errorCount++;
-    } else if (upper.includes('WARN')) {
-      level = 'warn';
+    } else if (parsed.level === 'warn') {
       warnCount++;
     }
 
-    if (currentLogFilter === 'error' && level !== 'error') continue;
-    if (currentLogFilter === 'warn' && level !== 'warn') continue;
+    if (currentLogFilter === 'error' && parsed.level !== 'error') continue;
+    if (currentLogFilter === 'warn' && parsed.level !== 'warn') continue;
 
-    parsedLines.push({ raw: line, level });
+    parsedLines.push(parsed);
   }
 
   const badgeErr = document.getElementById('logs-count-error');
@@ -1575,7 +1610,6 @@ function renderFormattedLogs(text) {
   }
 
   const html = parsedLines.map(item => {
-    const esc = escapeHtml(item.raw);
     let badgeHtml = '';
     if (item.level === 'error') {
       badgeHtml = `<span class="log-level-badge badge-error">ERROR</span>`;
@@ -1584,7 +1618,12 @@ function renderFormattedLogs(text) {
     } else {
       badgeHtml = `<span class="log-level-badge badge-info">INFO</span>`;
     }
-    return `<div class="log-line log-${item.level}">${badgeHtml}<span class="log-msg">${esc}</span></div>`;
+
+    const timeHtml = item.timeStr ? `<span class="log-time">${escapeHtml(item.timeStr)}</span>` : '';
+    const tagHtml = item.tag ? `<span class="log-tag">[${escapeHtml(item.tag)}]</span>` : '';
+    const msgHtml = `<span class="log-msg">${escapeHtml(item.msg)}</span>`;
+
+    return `<div class="log-line log-${item.level}">${timeHtml}${badgeHtml}${tagHtml}${msgHtml}</div>`;
   }).join('');
 
   const shouldScroll = chkLogsAutoscroll?.checked;
