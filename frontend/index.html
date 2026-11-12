@@ -82,6 +82,7 @@
         </div>
         <span class="nav-label" data-i18n="nav_settings">Настройки</span>
       </div>
+      <div class="nav-rail-version" id="nav-rail-app-version">1.0.5</div>
     </nav>
 
     <!-- Main Content Pane -->
@@ -123,6 +124,25 @@
               <path d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z"/>
             </svg>
           </button>
+        </div>
+
+        <!-- Active Subscription Traffic Strip (Hidden if not connected to a sub with traffic info) -->
+        <div id="dash-sub-widget" class="dash-sub-widget" style="display: none;" title="Перейти к управлению подпиской">
+          <div class="dash-sub-left">
+            <div class="dash-sub-icon-box">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+            </div>
+            <div class="dash-sub-title-col">
+              <div class="dash-sub-name" data-i18n="sub_traffic_title">Трафик подписки</div>
+              <div id="dash-sub-exp" class="dash-sub-exp">Активна</div>
+            </div>
+          </div>
+          <div class="dash-sub-right">
+            <div id="dash-sub-stat" class="dash-sub-stat privacy-target">Осталось — из —</div>
+            <div class="dash-sub-mini-track">
+              <div id="dash-sub-mini-fill" class="dash-sub-mini-fill" style="width: 0%;"></div>
+            </div>
+          </div>
         </div>
 
         <!-- 2x2 Telemetry Grid -->
@@ -357,7 +377,7 @@
 
             <!-- Quick Presets -->
             <div class="presets-row">
-              <span style="font-size: 11px; font-weight: 600; color: #79747E; margin-right: 4px;">Быстрые наборы:</span>
+              <span class="preset-label">Быстрые наборы:</span>
               <button class="preset-chip" data-preset="youtube_discord">+ YouTube Discord</button>
               <button class="preset-chip" data-preset="social_media">+ Соцсети (Insta, X, Meta)</button>
               <button class="preset-chip" data-preset="ai_services">+ OpenAI Claude</button>
@@ -415,14 +435,45 @@
           <!-- Dynamically populated -->
         </div>
 
-        <!-- Active Subscription Banner -->
-        <div id="sub-banner" class="smart-card" style="display: none; padding: 12px 18px; margin-bottom: 14px; background: rgba(208, 188, 255, 0.05); border: 1px solid rgba(208, 188, 255, 0.15);">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div>
-              <span id="sub-banner-title" style="font-weight: 700; font-size: 13px; color: #E6E1E5;">Подписка</span>
-              <span id="sub-banner-count" style="font-size: 11px; color: #948F99; margin-left: 8px;"></span>
+        <!-- Active Subscription Traffic Card (Upgraded from simple sub-banner) -->
+        <div id="sub-traffic-card" class="sub-traffic-card" style="display: none;">
+          <div class="sub-traffic-header">
+            <div class="sub-traffic-title-wrap">
+              <div id="sub-traffic-name" class="sub-traffic-name">Подписка</div>
+              <span id="sub-status-badge" class="sub-status-badge active"><span class="status-dot"></span> <span id="sub-status-text">Активна</span></span>
             </div>
-            <button id="btn-update-active-sub" class="btn-pill" style="height: 28px; padding: 0 14px; font-size: 11px;" data-i18n="btn_refresh">Обновить</button>
+            <button id="btn-update-active-sub" class="btn-pill" style="height: 32px; padding: 0 16px; font-size: 11.5px; gap: 6px;" title="Обновить список серверов и трафик подписки">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+              <span data-i18n="btn_refresh">Обновить</span>
+            </button>
+          </div>
+          <div id="sub-traffic-quota-section">
+            <div class="sub-traffic-progress-row">
+              <div class="sub-traffic-used-text">
+                <span id="sub-traffic-rem" class="sub-traffic-val">Осталось —</span> <span id="sub-traffic-tot" class="sub-traffic-total">из —</span>
+              </div>
+              <div id="sub-traffic-pct" class="sub-traffic-percent">0%</div>
+            </div>
+            <div class="sub-traffic-track">
+              <div id="sub-traffic-fill" class="sub-traffic-fill" style="width: 0%;"></div>
+            </div>
+            <div class="sub-traffic-meta-row">
+              <div class="sub-meta-item">
+                <svg class="meta-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                <span id="sub-meta-expire">Срок: —</span>
+              </div>
+              <div class="sub-meta-item">
+                <svg class="meta-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                <span id="sub-meta-down">Скачано: —</span>
+              </div>
+              <div class="sub-meta-item">
+                <svg class="meta-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                <span id="sub-meta-up">Отдано: —</span>
+              </div>
+            </div>
+          </div>
+          <div id="sub-traffic-fallback-section" style="display: none; font-size: 12px; color: var(--on-surface-muted);">
+            <span id="sub-fallback-nodes-count">Узлов: —</span> • <span id="sub-fallback-updated">Обновлено: —</span>
           </div>
         </div>
 
@@ -468,7 +519,7 @@
 
         <!-- Language & Interface Card -->
         <div class="card">
-          <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 8px;" data-i18n="settings_section_interface">Интерфейс и Язык</h3>
+          <h3 class="card-section-title" data-i18n="settings_section_interface">Интерфейс и Язык</h3>
           
           <div class="setting-row">
             <div>
@@ -484,7 +535,7 @@
         </div>
 
         <div class="card">
-          <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 8px;" data-i18n="settings_section_routing">Маршрутизация и Сеть</h3>
+          <h3 class="card-section-title" data-i18n="settings_section_routing">Маршрутизация и Сеть</h3>
           
           <div class="setting-row">
             <div>
@@ -510,7 +561,7 @@
         </div>
 
         <div class="card">
-          <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 8px;" data-i18n="settings_section_dns">DNS и Параметры адаптера</h3>
+          <h3 class="card-section-title" data-i18n="settings_section_dns">DNS и Параметры адаптера</h3>
           
           <div class="setting-row">
             <div>
@@ -539,7 +590,7 @@
 
         <!-- Subscriptions & Device Identification (UA & HWID) -->
         <div class="card">
-          <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 8px;" data-i18n="settings_section_subs_headers">Параметры подписок и Идентификация</h3>
+          <h3 class="card-section-title" data-i18n="settings_section_subs_headers">Параметры подписок и Идентификация</h3>
           
           <div class="setting-row" style="flex-wrap: wrap; gap: 12px;">
             <div style="flex: 1; min-width: 240px;">
@@ -576,7 +627,7 @@
         </div>
 
         <div class="card">
-          <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 8px;" data-i18n="settings_section_system">Системные</h3>
+          <h3 class="card-section-title" data-i18n="settings_section_system">Системные</h3>
           
           <div class="setting-row">
             <div>
@@ -614,13 +665,13 @@
 
         <!-- Application Update Card -->
         <div class="card">
-          <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 8px;" data-i18n="settings_section_update">Обновление приложения</h3>
+          <h3 class="card-section-title" data-i18n="settings_section_update">Обновление приложения</h3>
           
           <div class="setting-row" style="align-items: center;">
             <div>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <div class="setting-label" data-i18n="settings_update_label">Текущая версия</div>
-                <span id="settings-app-version" class="badge" style="background: rgba(167, 139, 250, 0.15); color: #c4b5fd; font-weight: 700; font-size: 12px; padding: 2px 8px; border-radius: 6px;">v1.0.5</span>
+                <span id="settings-app-version" class="badge badge-accent">v1.0.5</span>
               </div>
               <div id="settings-update-desc" class="setting-desc" data-i18n="settings_update_desc">Проверка наличия обновлений на GitHub и автозамена файла</div>
             </div>
@@ -886,7 +937,7 @@
             <div style="display: flex; gap: 8px; align-items: center;">
               <input id="input-geo-url" class="form-input tabular" type="text" placeholder="https://raw.github... или C:\список.txt" style="flex: 1; min-width: 0;"/>
               <button id="btn-browse-geo-file" class="btn-browse-input" type="button" title="Выбрать локальный файл">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
                 <span>Обзор...</span>
               </button>
             </div>
@@ -980,24 +1031,24 @@
         <input type="file" id="input-qr-file" accept="image/*" style="display: none;">
 
         <!-- Camera Video View (Hidden by default) -->
-        <div id="qr-camera-box" style="display: none; flex-direction: column; align-items: center; gap: 8px; background: #120e1a; border-radius: 12px; overflow: hidden; padding: 10px; border: 1px solid rgba(255,255,255,0.08);">
+        <div id="qr-camera-box" class="qr-camera-box">
           <video id="qr-video" style="width: 100%; max-height: 180px; border-radius: 8px; object-fit: cover;" playsinline></video>
-          <div style="font-size: 11px; color: #8f8a9c;" data-i18n="qr_camera_hint">Наведите камеру на QR-код конфига или подписки</div>
+          <div style="font-size: 11px; color: var(--on-surface-muted);" data-i18n="qr_camera_hint">Наведите камеру на QR-код конфига или подписки</div>
         </div>
 
         <!-- Dropzone -->
         <div id="qr-dropzone" class="qr-dropzone">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.5;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
-          <div style="font-size: 12px; font-weight: 500; color: #b3adc2;"><span data-i18n="qr_dropzone_lead">Перетащите файл сюда или нажмите</span> <kbd style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; font-family: monospace;">Ctrl+V</kbd></div>
+          <div style="font-size: 12px; font-weight: 500; color: var(--on-surface-variant);"><span data-i18n="qr_dropzone_lead">Перетащите файл сюда или нажмите</span> <kbd style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; font-family: monospace;">Ctrl+V</kbd></div>
         </div>
 
         <!-- Result Box (Hidden by default) -->
-        <div id="qr-result-box" style="display: none; flex-direction: column; gap: 8px; background: #201a2d; border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 10px; padding: 12px;">
+        <div id="qr-result-box" class="qr-result-box">
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <span id="qr-result-type" class="badge-count" data-i18n="qr_type_node">Узел</span>
-            <span style="font-size: 11px; color: #4ade80; font-weight: 600;" data-i18n="qr_recognized_badge">✓ QR успешно распознан</span>
+            <span style="font-size: 11px; color: var(--success); font-weight: 600;" data-i18n="qr_recognized_badge">✓ QR успешно распознан</span>
           </div>
-          <div id="qr-result-text" style="font-size: 11px; font-family: monospace; color: #f0ecf6; word-break: break-all; max-height: 60px; overflow-y: auto;"></div>
+          <div id="qr-result-text" style="font-size: 11px; font-family: monospace; color: var(--on-surface); word-break: break-all; max-height: 60px; overflow-y: auto;"></div>
         </div>
       </div>
 
@@ -1019,7 +1070,7 @@
           </div>
           <p class="modal-subtitle">
             <span data-i18n="modal_update_subtitle">Обнаружен новый релиз VibeVPN на GitHub</span>
-            (<span id="update-modal-ver-diff" style="color: #cbd5e1; font-weight: 500;">v1.0.3 → v1.0.4</span>)
+            (<span id="update-modal-ver-diff" style="color: var(--on-surface-variant); font-weight: 500;">v1.0.3 → v1.0.4</span>)
           </p>
         </div>
         <button id="btn-close-app-update" class="modal-close-btn" title="Закрыть">
@@ -1041,9 +1092,9 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <div class="update-spinner"></div>
-              <span id="update-progress-label" data-i18n="update_downloading" style="color: #e2e8f0; font-size: 13px; font-weight: 500;">Загрузка обновления...</span>
+              <span id="update-progress-label" class="update-progress-label" data-i18n="update_downloading">Загрузка обновления...</span>
             </div>
-            <span id="update-progress-percent" style="font-weight: 700; color: #c084fc; font-size: 13px; font-variant-numeric: tabular-nums;">0%</span>
+            <span id="update-progress-percent" class="update-progress-percent">0%</span>
           </div>
           <div class="update-bar-track">
             <div id="update-progress-bar" class="update-bar-fill"></div>

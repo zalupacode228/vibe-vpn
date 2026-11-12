@@ -21,6 +21,8 @@ type Node struct {
 	Host             string                 `json:"host,omitempty"`
 	ServiceName      string                 `json:"service_name,omitempty"`
 	Network          string                 `json:"network,omitempty"`
+	Mode             string                 `json:"mode,omitempty"`
+	Encryption       string                 `json:"encryption,omitempty"`
 	SubscriptionID   string                 `json:"subscription_id,omitempty"`
 	SubscriptionName string                 `json:"subscription_name,omitempty"`
 	Ping             int                    `json:"ping"`
@@ -51,6 +53,11 @@ type Subscription struct {
 	URL       string `json:"url"`
 	UpdatedAt string `json:"updated_at"`
 	Count     int    `json:"count"`
+	Upload      int64  `json:"upload"`
+	Download    int64  `json:"download"`
+	Total       int64  `json:"total"`
+	Expire      int64  `json:"expire"`
+	HasUserInfo bool   `json:"has_userinfo"`
 }
 
 type CustomList struct {

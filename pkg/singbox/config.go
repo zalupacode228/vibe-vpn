@@ -260,6 +260,9 @@ func (b *ConfigBuilder) GenerateConfig(
 			if node.Flow != "" {
 				proxyOut["flow"] = node.Flow
 			}
+			if node.Encryption != "" {
+				proxyOut["encryption"] = node.Encryption
+			}
 			tlsMap := map[string]interface{}{
 				"enabled": true,
 			}
@@ -282,11 +285,15 @@ func (b *ConfigBuilder) GenerateConfig(
 			proxyOut["tls"] = tlsMap
 
 			if node.Network != "" && node.Network != "tcp" {
-				proxyOut["transport"] = map[string]interface{}{
+				transMap := map[string]interface{}{
 					"type": node.Network,
 					"path": node.Path,
 					"host": node.Host,
 				}
+				if node.Mode != "" {
+					transMap["mode"] = node.Mode
+				}
+				proxyOut["transport"] = transMap
 			}
 		} else if nodeType == "hysteria2" || nodeType == "hy2" {
 			proxyOut["type"] = "hysteria2"
