@@ -30,7 +30,7 @@ import (
 	"vibe-go/pkg/warp"
 )
 
-const AppVersion = "v1.0.6"
+const AppVersion = "v1.0.7"
 
 //go:embed assets/core/sing-box.exe assets/core/wintun.dll
 var embeddedCore embed.FS
@@ -81,6 +81,7 @@ func (a *App) startup(ctx context.Context) {
 	if err == nil {
 		a.tray = t
 	}
+	go a.startSubscriptionAutoUpdater()
 }
 
 func (a *App) unpackEmbeddedCore() {
@@ -468,6 +469,21 @@ func (a *App) RefreshSubscription(id string) ([]models.Node, error) {
 	_ = a.storage.SaveNodes(preserved)
 
 	return fetchRes.Nodes, nil
+}
+
+func (a *App) RefreshAllSubscriptions() ([]models.Node, error) {
+	subsList := a.storage.LoadSubscriptions()
+	if len(subsList) == 0 {
+		return a.storage.LoadNodes(), nil
+	}
+	var lastNodes []models.Node
+	for _, s := range subsList {
+		nodes, err := a.RefreshSubscription(s.ID)
+		if err == nil {
+			lastNodes = nodes
+		}
+	}
+	return lastNodes, nil
 }
 
 func (a *App) DeleteSubscription(id string) error {
@@ -945,6 +961,27 @@ func (a *App) ToggleVPN(enabled bool) (bool, string, error) {
 
 	rules := a.storage.LoadRules()
 	settings.CustomLists = a.storage.LoadCustomLists()
+
+	if settings.WarpDetour {
+		var warpNode *models.Node
+		for _, n := range nodes {
+			proto := strings.ToLower(n.Protocol)
+			if (proto == "wireguard" || proto == "warp") && n.PrivateKey != "" {
+				warpNode = &n
+				break
+			}
+		}
+		if warpNode == nil {
+			genNode, genErr := warp.GenerateWarp("AmneziaWG")
+			if genErr == nil && genNode != nil {
+				warpNode = genNode
+			}
+		}
+		a.builder.SetWarpNode(warpNode)
+	} else {
+		a.builder.SetWarpNode(nil)
+	}
+
 	configBytes, err := a.builder.GenerateConfig(settings.SplitMode, rules, activeNode, settings)
 	if err != nil {
 		return false, fmt.Sprintf("Ошибка конфигурации: %v", err), err
@@ -1228,4 +1265,250 @@ Start-Process -FilePath '%s'
 	}()
 
 	return nil
+}
+
+// TestWebLatency performs true end-to-end HTTP 204 connectivity test
+func (a *App) TestWebLatency() map[string]interface{} {
+	start := time.Now()
+	targetURL := "http://cp.cloudflare.com/generate_204"
+	latency, code, err := pinger.PingWeb(targetURL, 3500*time.Millisecond)
+	if err != nil {
+		return map[string]interface{}{
+			"ok":      false,
+			"error":   err.Error(),
+			"latency": 0,
+			"code":    0,
+			"target":  "Cloudflare",
+		}
+	}
+	if (code == 204 || code == 200) && latency > 0 {
+		a.mu.RLock()
+		curID := a.activeNodeID
+		a.mu.RUnlock()
+		if curID != "" {
+			nodes := a.storage.LoadNodes()
+			for i := range nodes {
+				if nodes[i].ID == curID {
+					nodes[i].Ping = latency
+					_ = a.storage.SaveNodes(nodes)
+					break
+				}
+			}
+		}
+	}
+
+	return map[string]interface{}{
+		"ok":      code == 204 || code == 200,
+		"latency": latency,
+		"code":    code,
+		"target":  "Cloudflare",
+		"time_ms": int(time.Since(start).Milliseconds()),
+	}
+}
+
+// SelectFastestNode finds and activates the node with the lowest ping
+func (a *App) SelectFastestNode() (*models.Node, error) {
+	nodes := a.storage.LoadNodes()
+	if len(nodes) == 0 {
+		return nil, fmt.Errorf("no nodes available")
+	}
+
+	hasPing := false
+	for _, n := range nodes {
+		if n.Ping > 0 {
+			hasPing = true
+			break
+		}
+	}
+
+	if !hasPing {
+		res := a.PingAllNodes()
+		for i := range nodes {
+			if p, ok := res[nodes[i].ID]; ok {
+				nodes[i].Ping = p
+			}
+		}
+	}
+
+	var bestNode *models.Node
+	minPing := 999999
+	for i := range nodes {
+		if nodes[i].Ping > 0 && nodes[i].Ping < minPing {
+			minPing = nodes[i].Ping
+			bestNode = &nodes[i]
+		}
+	}
+
+	if bestNode == nil {
+		bestNode = &nodes[0]
+	}
+
+	a.mu.Lock()
+	a.activeNodeID = bestNode.ID
+	a.mu.Unlock()
+
+	settings := a.storage.LoadSettings()
+	settings.ActiveNodeID = bestNode.ID
+	_ = a.storage.SaveSettings(settings)
+
+	// If VPN is currently connected, restart it with the new active node
+	if a.controller.IsRunning() {
+		_, _, _ = a.ToggleVPN(false) // Stop
+		time.Sleep(200 * time.Millisecond)
+		_, _, _ = a.ToggleVPN(true)  // Start with new node
+	}
+
+	return bestNode, nil
+}
+
+var warpToggleMu sync.Mutex
+
+// ToggleWarpDetour toggles Cloudflare WARP egress routing for proxy nodes
+func (a *App) ToggleWarpDetour() (bool, error) {
+	warpToggleMu.Lock()
+	defer warpToggleMu.Unlock()
+
+	settings := a.storage.LoadSettings()
+	settings.WarpDetour = !settings.WarpDetour
+	if err := a.storage.SaveSettings(settings); err != nil {
+		return false, err
+	}
+
+	if a.controller.IsRunning() {
+		_, _, _ = a.ToggleVPN(false) // Stop
+		time.Sleep(250 * time.Millisecond)
+		_, _, _ = a.ToggleVPN(true)  // Restart with updated detour
+	}
+	return settings.WarpDetour, nil
+}
+
+// ToggleKillSwitch toggles leak prevention and strict routing
+func (a *App) ToggleKillSwitch() (bool, error) {
+	settings := a.storage.LoadSettings()
+	settings.KillSwitch = !settings.KillSwitch
+	if err := a.storage.SaveSettings(settings); err != nil {
+		return false, err
+	}
+
+	if a.controller.IsRunning() {
+		_, _, _ = a.ToggleVPN(false) // Stop
+		time.Sleep(200 * time.Millisecond)
+		_, _, _ = a.ToggleVPN(true)  // Restart
+	}
+	return settings.KillSwitch, nil
+}
+
+// ExportProfile exports all application settings, nodes, rules, and lists to a JSON backup
+func (a *App) ExportProfile() (string, error) {
+	if a.ctx == nil {
+		return "", fmt.Errorf("context not initialized")
+	}
+
+	defaultName := fmt.Sprintf("VibeVPN_Backup_%s.json", time.Now().Format("2006-01-02"))
+	savePath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		Title:           "Экспорт профиля VibeVPN",
+		DefaultFilename: defaultName,
+		Filters: []runtime.FileFilter{
+			{DisplayName: "VibeVPN Backup (*.json)", Pattern: "*.json"},
+		},
+	})
+	if err != nil || savePath == "" {
+		return "", err
+	}
+
+	profile := models.BackupProfile{
+		Version:       AppVersion,
+		ExportedAt:    time.Now().Format(time.RFC3339),
+		Settings:      a.storage.LoadSettings(),
+		Subscriptions: a.storage.LoadSubscriptions(),
+		Nodes:         a.storage.LoadNodes(),
+		AppRules:      a.storage.LoadRules(),
+		CustomLists:   a.storage.LoadCustomLists(),
+	}
+
+	data, err := json.MarshalIndent(profile, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("ошибка сериализации: %w", err)
+	}
+
+	if err := os.WriteFile(savePath, data, 0644); err != nil {
+		return "", fmt.Errorf("ошибка сохранения файла: %w", err)
+	}
+
+	return savePath, nil
+}
+
+// ImportProfile restores application settings, nodes, rules, and lists from a JSON backup
+func (a *App) ImportProfile() (string, error) {
+	if a.ctx == nil {
+		return "", fmt.Errorf("context not initialized")
+	}
+
+	filePath, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Импорт профиля VibeVPN",
+		Filters: []runtime.FileFilter{
+			{DisplayName: "VibeVPN Backup (*.json)", Pattern: "*.json"},
+		},
+	})
+	if err != nil || filePath == "" {
+		return "", err
+	}
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("ошибка чтения файла: %w", err)
+	}
+
+	var profile models.BackupProfile
+	if err := json.Unmarshal(data, &profile); err != nil {
+		return "", fmt.Errorf("неверный формат файла: %w", err)
+	}
+
+	if profile.Settings.SplitMode != "" {
+		_ = a.storage.SaveSettings(profile.Settings)
+	}
+	if len(profile.Subscriptions) > 0 {
+		_ = a.storage.SaveSubscriptions(profile.Subscriptions)
+	}
+	if len(profile.Nodes) > 0 {
+		_ = a.storage.SaveNodes(profile.Nodes)
+	}
+	if len(profile.AppRules) > 0 {
+		_ = a.storage.SaveRules(profile.AppRules)
+	}
+	if len(profile.CustomLists) > 0 {
+		_ = a.storage.SaveCustomLists(profile.CustomLists)
+	}
+
+	return fmt.Sprintf("Успешно импортировано: узлов — %d, подписок — %d, списков — %d",
+		len(profile.Nodes), len(profile.Subscriptions), len(profile.CustomLists)), nil
+}
+
+func (a *App) startSubscriptionAutoUpdater() {
+	time.Sleep(15 * time.Second)
+
+	settings := a.storage.LoadSettings()
+	if settings.AutoUpdateSubs {
+		_, _ = a.RefreshAllSubscriptions()
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "subscriptions-updated")
+		}
+	}
+
+	interval := 24 * time.Hour
+	if settings.AutoUpdateIntervalHours > 0 {
+		interval = time.Duration(settings.AutoUpdateIntervalHours) * time.Hour
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		curSettings := a.storage.LoadSettings()
+		if curSettings.AutoUpdateSubs {
+			_, _ = a.RefreshAllSubscriptions()
+			if a.ctx != nil {
+				runtime.EventsEmit(a.ctx, "subscriptions-updated")
+			}
+		}
+	}
 }

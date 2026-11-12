@@ -21,3 +21,31 @@ func TestStorageLoad(t *testing.T) {
 	rules := s.LoadRules()
 	t.Logf("Loaded %d rules from storage", len(rules))
 }
+
+func TestStorageSaveLoadWarpDetour(t *testing.T) {
+	s := NewStorage()
+	initial := s.LoadSettings()
+
+	// Toggle to opposite
+	target := !initial.WarpDetour
+	initial.WarpDetour = target
+	if err := s.SaveSettings(initial); err != nil {
+		t.Fatalf("SaveSettings failed: %v", err)
+	}
+
+	reloaded := s.LoadSettings()
+	if reloaded.WarpDetour != target {
+		t.Fatalf("Expected WarpDetour to be %v, got %v", target, reloaded.WarpDetour)
+	}
+
+	// Toggle back
+	initial.WarpDetour = !target
+	if err := s.SaveSettings(initial); err != nil {
+		t.Fatalf("SaveSettings revert failed: %v", err)
+	}
+
+	reloaded2 := s.LoadSettings()
+	if reloaded2.WarpDetour != !target {
+		t.Fatalf("Expected WarpDetour to revert to %v, got %v", !target, reloaded2.WarpDetour)
+	}
+}

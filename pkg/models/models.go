@@ -101,8 +101,22 @@ type Settings struct {
 	TunMTU         int          `json:"tun_mtu,omitempty"`
 	RemoteDNS      string       `json:"remote_dns,omitempty"`
 	DirectDNS      string       `json:"direct_dns,omitempty"`
-	UserAgent      string       `json:"user_agent,omitempty"`
-	HWID           string       `json:"hwid,omitempty"`
+	UserAgent              string       `json:"user_agent,omitempty"`
+	HWID                   string       `json:"hwid,omitempty"`
+	AutoUpdateSubs         bool         `json:"auto_update_subs"`
+	AutoUpdateIntervalHours int         `json:"auto_update_interval_hours,omitempty"`
+	KillSwitch             bool         `json:"kill_switch"`
+	WarpDetour             bool         `json:"warp_detour"`
+}
+
+type BackupProfile struct {
+	Version       string         `json:"version"`
+	ExportedAt    string         `json:"exported_at"`
+	Settings      Settings       `json:"settings"`
+	Subscriptions []Subscription `json:"subscriptions"`
+	Nodes         []Node         `json:"nodes"`
+	AppRules      []AppRule      `json:"app_rules"`
+	CustomLists   []CustomList   `json:"custom_lists"`
 }
 
 type ProcessInfo struct {
