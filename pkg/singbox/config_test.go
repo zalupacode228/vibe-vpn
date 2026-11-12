@@ -14,14 +14,14 @@ func TestGenerateConfigVLESS(t *testing.T) {
 		ID:          "vless-test",
 		Name:        "Test VLESS Reality",
 		Protocol:    "vless",
-		Server:      "panel05.zamik.work.gd",
-		Port:        46787,
-		UUID:        "6c8f967c-8f07-41d6-a3bf-293d6f5a8ae1",
+		Server:      "1.1.1.1",
+		Port:        443,
+		UUID:        "00000000-0000-0000-0000-000000000000",
 		Security:    "reality",
-		SNI:         "files.zamik.work.gd",
-		Fingerprint: "firefox",
-		PublicKey:   "ZrLg4VRO1xH-7Q5ZcMzvfP3AtVJwnUPAiUyh13DUiQQ",
-		ShortID:     "200edd",
+		SNI:         "cloudflare.com",
+		Fingerprint: "chrome",
+		PublicKey:   "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
+		ShortID:     "0123456789abcdef",
 	}
 
 	settings := models.Settings{

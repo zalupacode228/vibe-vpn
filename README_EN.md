@@ -80,7 +80,7 @@
 - Automatically recognizes single nodes, bulk node lists, and subscription links.
 
 ### 🚀 Modern Protocol Support
-- VLESS (Reality, TLS, WebSocket, gRPC)
+- VLESS (Reality, TLS, WebSocket, gRPC, **XHTTP / SplitHTTP, Post-Quantum ML-KEM-768 encryption**)
 - VMess
 - Shadowsocks (2022)
 - Trojan
@@ -88,26 +88,31 @@
 - TUIC v5
 - WireGuard & AmneziaWG (AWG)
 
-### 📊 Live Telemetry & Process Tree
+### 📊 Telemetry, Subscriptions & Monitoring
+- **Hybrid Subscription Widget**: Summary status strip on the main dashboard and detailed card on the Servers tab (supports quota limits, unlimited tiers, and expiration dates).
+- **Active Node Auto-Pinning**: The currently connected server is always automatically pinned to the top of the node list.
 - Real-time 60 FPS bandwidth speed graph (Download / Upload).
 - High-precision ping latency test with visual color indicators (green / yellow / red).
 - Interactive **Connection Tree** grouped by active Windows process names, displaying exact destination IPs, routing rules, and bandwidth per app.
+
+### ⚙️ Customization & Privacy
+- **Custom User-Agent & HWID**: Tailor client identification and hardware ID when updating subscriptions to ensure maximum server compatibility.
+- **Privacy Blur Mode**: One-click blur of IP addresses, server domains, and private keys for safe livestreaming and screenshots.
 
 ### 🌍 Bilingual Localization & System Auto-Detection
 - Automatically detects Windows system language at startup (Russian for RU/CIS systems, English for rest of world).
 - Instant on-the-fly language switching in Settings without restarting the application.
 
-### 🎨 Design & Privacy
-- Modern Material 3 Dark Glassmorphism interface with branded glowing shield icon.
+### 🎨 Design & Ergonomics
+- Polished Material 3 Dark theme (strict 16px grid rhythm, balanced typography contrast, clean visual accents).
 - Minimization to system tray with quick-actions menu.
-- **Privacy Blur Mode**: One-click blur of IP addresses, server domains, and private keys for safe livestreaming and screenshots.
 
 ---
 
 ## 🚀 Download & Installation
 
 1. Go to the [Releases](https://github.com/zalupacode228/vibe-vpn/releases/latest) page.
-2. Download the latest `VibeVPN-v1.0.2-Windows-x64.exe` (or `VPN.exe`).
+2. Download the latest `VibeVPN-v1.0.6-Windows-x64.exe` (or `VPN.exe`).
 3. Run the executable.
    > **Note**: Requires Windows 10 or 11 (64-bit). Administrator privileges are required to create the TUN network adapter (`wintun.dll`).
 
