@@ -12,7 +12,41 @@ import (
 	"vibe-go/pkg/models"
 )
 
-func FetchAndParse(subURL string, subID string, subName string, userAgent string, hwid string) ([]models.Node, error) {
+type FetchResult struct {
+	Nodes       []models.Node
+	Upload      int64
+	Download    int64
+	Total       int64
+	Expire      int64
+	HasUserInfo bool
+}
+
+func ParseUserInfo(headerVal string) (upload, download, total, expire int64) {
+	if headerVal == "" {
+		return
+	}
+	parts := strings.Split(headerVal, ";")
+	for _, part := range parts {
+		kv := strings.SplitN(strings.TrimSpace(part), "=", 2)
+		if len(kv) == 2 {
+			k := strings.ToLower(strings.TrimSpace(kv[0]))
+			v, _ := strconv.ParseInt(strings.TrimSpace(kv[1]), 10, 64)
+			switch k {
+			case "upload":
+				upload = v
+			case "download":
+				download = v
+			case "total":
+				total = v
+			case "expire":
+				expire = v
+			}
+		}
+	}
+	return
+}
+
+func FetchAndParse(subURL string, subID string, subName string, userAgent string, hwid string) (*FetchResult, error) {
 	ua := strings.TrimSpace(userAgent)
 	if ua == "" {
 		ua = "v2rayNG/1.8.5"
@@ -54,6 +88,13 @@ func FetchAndParse(subURL string, subID string, subName string, userAgent string
 	}
 	defer resp.Body.Close()
 
+	userinfoHdr := resp.Header.Get("Subscription-Userinfo")
+	if userinfoHdr == "" {
+		userinfoHdr = resp.Header.Get("subscription-userinfo")
+	}
+	hasUserInfo := strings.TrimSpace(userinfoHdr) != ""
+	u, d, tot, exp := ParseUserInfo(userinfoHdr)
+
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -86,7 +127,14 @@ func FetchAndParse(subURL string, subID string, subName string, userAgent string
 		}
 	}
 
-	return nodes, nil
+	return &FetchResult{
+		Nodes:       nodes,
+		Upload:      u,
+		Download:    d,
+		Total:       tot,
+		Expire:      exp,
+		HasUserInfo: hasUserInfo,
+	}, nil
 }
 
 func ParseNodeLink(raw string) *models.Node {
@@ -132,6 +180,8 @@ func ParseNodeLink(raw string) *models.Node {
 		node.Path = q.Get("path")
 		node.Host = q.Get("host")
 		node.ServiceName = q.Get("serviceName")
+		node.Mode = q.Get("mode")
+		node.Encryption = q.Get("encryption")
 
 		if node.Security == "reality" {
 			node.ProtocolLabel = "VLESS Reality"

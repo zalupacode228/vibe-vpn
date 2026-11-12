@@ -493,7 +493,12 @@ function renderNodePickerDropdown() {
 
   orderedGroupNames.forEach(gName => {
     html += `<div class="node-picker-group-title">── ${gName} ──</div>`;
-    groups[gName].forEach(n => {
+    const sortedGroupNodes = [...groups[gName]].sort((a, b) => {
+      if (a.id === curId) return -1;
+      if (b.id === curId) return 1;
+      return 0;
+    });
+    sortedGroupNodes.forEach(n => {
       const isActive = n.id === curId;
       const cc = detectNodeCountry(n);
       const flagSvg = renderFlagSVG(cc, 20, 13);
@@ -551,6 +556,9 @@ function renderNodePickerDropdown() {
 
       try {
         await SetActiveNodeID(nodeId);
+        state.activeNodeId = nodeId;
+        renderNodeCategoryTabs();
+        updateDashboardSubWidget();
         if (state.isConnected) {
           showToast(`Подключено: ${displayName}`);
         }
@@ -726,6 +734,7 @@ async function pollTelemetry() {
     if (stats.node_name) {
       document.getElementById('hero-node-name').innerText = cleanNodeDisplayName(stats.node_name);
     }
+    updateDashboardSubWidget();
 
     // Push to chart
     state.speedHistory.down.shift();
@@ -1321,22 +1330,206 @@ function renderNodeCategoryTabs() {
     });
   });
 
-  // Update Subscription Banner
-  const subBanner = document.getElementById('sub-banner');
-  const activeSub = subs.find(s => s.id === state.activeNodeCategory);
-  if (activeSub && subBanner) {
-    subBanner.style.display = 'block';
+  // Update Subscription Traffic Card in Nodes
+  const subCard = document.getElementById('sub-traffic-card');
+  let activeSub = subs.find(s => s.id === state.activeNodeCategory);
+  if (!activeSub && state.activeNodeCategory === 'all') {
+    const activeNode = nodes.find(n => n.id === state.activeNodeId);
+    if (activeNode && (activeNode.subscription_id || activeNode.subscription_name)) {
+      activeSub = subs.find(s => s.id === activeNode.subscription_id || s.name === activeNode.subscription_name);
+    }
+  }
+  if (activeSub && subCard) {
+    subCard.style.display = 'flex';
     const subCount = nodes.filter(n => n.subscription_id === activeSub.id || n.subscription_name === activeSub.name).length;
-    document.getElementById('sub-banner-title').innerText = `Подписка: ${activeSub.name}`;
-    document.getElementById('sub-banner-count').innerText = `Узлов: ${subCount} • Обновлено: ${activeSub.updated_at || '—'}`;
-  } else if (subBanner) {
-    subBanner.style.display = 'none';
+    
+    // Name
+    const nameEl = document.getElementById('sub-traffic-name');
+    if (nameEl) nameEl.innerText = activeSub.name;
+
+    // Status badge
+    const badgeEl = document.getElementById('sub-status-badge');
+    const badgeTextEl = document.getElementById('sub-status-text');
+    let isExpired = false;
+    if (activeSub.expire > 0 && activeSub.expire * 1000 < Date.now()) {
+      isExpired = true;
+    }
+    if (badgeEl && badgeTextEl) {
+      badgeEl.className = `sub-status-badge ${isExpired ? 'expired' : 'active'}`;
+      badgeTextEl.innerText = isExpired ? 'Истекла' : 'Активна';
+    }
+
+    const quotaSection = document.getElementById('sub-traffic-quota-section');
+    const fallbackSection = document.getElementById('sub-traffic-fallback-section');
+
+    const hasUserInfo = !!(activeSub.has_userinfo || (activeSub.total > 0) || (activeSub.expire > 0) || ((activeSub.download || 0) > 0) || ((activeSub.upload || 0) > 0));
+    if (hasUserInfo) {
+      if (quotaSection) quotaSection.style.display = 'block';
+      if (fallbackSection) fallbackSection.style.display = 'none';
+
+      const remEl = document.getElementById('sub-traffic-rem');
+      const totEl = document.getElementById('sub-traffic-tot');
+      const pctEl = document.getElementById('sub-traffic-pct');
+      const fillEl = document.getElementById('sub-traffic-fill');
+      const expEl = document.getElementById('sub-meta-expire');
+      const downEl = document.getElementById('sub-meta-down');
+      const upEl = document.getElementById('sub-meta-up');
+
+      const used = (activeSub.upload || 0) + (activeSub.download || 0);
+
+      if (activeSub.total > 0) {
+        const remaining = Math.max(0, activeSub.total - used);
+        const pct = Math.min(100, Math.max(0, (used / activeSub.total) * 100));
+
+        if (remEl) remEl.innerText = `Осталось ${formatBytes(remaining)}`;
+        if (totEl) totEl.innerText = `из ${formatBytes(activeSub.total)}`;
+        if (pctEl) pctEl.innerText = `${pct.toFixed(1)}% потрачено`;
+        if (fillEl) {
+          fillEl.style.width = `${pct.toFixed(1)}%`;
+          fillEl.className = 'sub-traffic-fill';
+          if (pct > 90) fillEl.classList.add('danger');
+          else if (pct > 75) fillEl.classList.add('warning');
+        }
+      } else {
+        if (remEl) remEl.innerText = `Трафик: Безлимитный`;
+        if (totEl) totEl.innerText = ``;
+        if (pctEl) pctEl.innerText = `Использовано: ${formatBytes(used)}`;
+        if (fillEl) {
+          fillEl.style.width = '100%';
+          fillEl.className = 'sub-traffic-fill unlimited';
+        }
+      }
+
+      if (expEl) {
+        if (activeSub.expire > 0) {
+          const expDate = new Date(activeSub.expire * 1000);
+          const now = new Date();
+          const diffDays = Math.ceil((expDate - now) / (1000 * 60 * 60 * 24));
+          const dateFormatted = expDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+          expEl.innerHTML = `Срок: <b>до ${dateFormatted}</b> ${diffDays > 0 ? `(${diffDays} дн.)` : '(истекла)'}`;
+        } else {
+          expEl.innerHTML = `Срок: <b>Бессрочно</b>`;
+        }
+      }
+
+      if (downEl) downEl.innerHTML = `Скачано: <b>${formatBytes(activeSub.download || 0)}</b>`;
+      if (upEl) upEl.innerHTML = `Отдано: <b>${formatBytes(activeSub.upload || 0)}</b>`;
+
+    } else {
+      // Fallback: no quota headers returned by server
+      if (quotaSection) quotaSection.style.display = 'none';
+      if (fallbackSection) fallbackSection.style.display = 'block';
+
+      const countEl = document.getElementById('sub-fallback-nodes-count');
+      const updatedEl = document.getElementById('sub-fallback-updated');
+      if (countEl) countEl.innerText = `Узлов: ${subCount}`;
+      if (updatedEl) updatedEl.innerText = `Обновлено: ${activeSub.updated_at || '—'}`;
+    }
+  } else if (subCard) {
+    subCard.style.display = 'none';
   }
 }
 
+function updateDashboardSubWidget() {
+  const widget = document.getElementById('dash-sub-widget');
+  if (!widget) return;
+
+  const nodes = state.nodes || [];
+  const subs = state.subscriptions || [];
+  const activeNode = nodes.find(n => n.id === state.activeNodeId);
+
+  if (!activeNode || (!activeNode.subscription_id && !activeNode.subscription_name)) {
+    widget.style.display = 'none';
+    return;
+  }
+
+  const activeSub = subs.find(s => s.id === activeNode.subscription_id || s.name === activeNode.subscription_name);
+  if (!activeSub) {
+    widget.style.display = 'none';
+    return;
+  }
+
+  const hasUserInfo = !!(activeSub.has_userinfo || (activeSub.total > 0) || (activeSub.expire > 0) || ((activeSub.download || 0) > 0) || ((activeSub.upload || 0) > 0));
+  if (!hasUserInfo) {
+    widget.style.display = 'none';
+    return;
+  }
+
+  widget.style.display = 'flex';
+
+  // Subtitle: expiration / status (without leaking provider name)
+  let expStr = 'Активна';
+  if (activeSub.expire > 0) {
+    const expDate = new Date(activeSub.expire * 1000);
+    const now = new Date();
+    const diffDays = Math.ceil((expDate - now) / (1000 * 60 * 60 * 24));
+    const dateFormatted = expDate.toLocaleDateString(state.language === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+    if (diffDays > 0) {
+      expStr = `Активна • до ${dateFormatted} (${diffDays} дн.)`;
+    } else {
+      expStr = `Истекла ${dateFormatted}`;
+    }
+  } else {
+    expStr = 'Активна • Бессрочно';
+  }
+  const expEl = document.getElementById('dash-sub-exp');
+  if (expEl) expEl.innerText = expStr;
+
+  // Stat & progress
+  const statEl = document.getElementById('dash-sub-stat');
+  const fillEl = document.getElementById('dash-sub-mini-fill');
+  const used = (activeSub.upload || 0) + (activeSub.download || 0);
+  
+  if (activeSub.total > 0) {
+    const remaining = Math.max(0, activeSub.total - used);
+    const pct = Math.min(100, Math.max(0, (used / activeSub.total) * 100));
+    
+    if (statEl) {
+      statEl.innerHTML = `Осталось <b>${formatBytes(remaining)}</b> из ${formatBytes(activeSub.total)}`;
+      statEl.classList.toggle('privacy-blurred', !!state.settings.privacy_blur);
+    }
+    if (fillEl) {
+      fillEl.style.width = `${pct.toFixed(1)}%`;
+      fillEl.className = 'dash-sub-mini-fill';
+      if (pct > 90) fillEl.classList.add('danger');
+      else if (pct > 75) fillEl.classList.add('warning');
+    }
+  } else {
+    // Unlimited traffic
+    if (statEl) {
+      statEl.innerHTML = `Трафик: <b>Безлимитный</b> (исп. ${formatBytes(used)})`;
+      statEl.classList.toggle('privacy-blurred', !!state.settings.privacy_blur);
+    }
+    if (fillEl) {
+      fillEl.style.width = '100%';
+      fillEl.className = 'dash-sub-mini-fill unlimited';
+    }
+  }
+}
+
+// Click on Dashboard sub widget navigates to nodes view
+document.getElementById('dash-sub-widget')?.addEventListener('click', () => {
+  const nodes = state.nodes || [];
+  const subs = state.subscriptions || [];
+  const activeNode = nodes.find(n => n.id === state.activeNodeId);
+  if (activeNode) {
+    const activeSub = subs.find(s => s.id === activeNode.subscription_id || s.name === activeNode.subscription_name);
+    if (activeSub) {
+      state.activeNodeCategory = activeSub.id;
+    }
+  }
+  switchPage('nodes');
+});
+
 // Update Active Subscription Banner Button
 document.getElementById('btn-update-active-sub')?.addEventListener('click', async () => {
-  const activeSub = (state.subscriptions || []).find(s => s.id === state.activeNodeCategory);
+  let activeSub = (state.subscriptions || []).find(s => s.id === state.activeNodeCategory);
+  if (!activeSub && state.activeNodeCategory === 'all') {
+    const activeNode = (state.nodes || []).find(n => n.id === state.activeNodeId);
+    if (activeNode && (activeNode.subscription_id || activeNode.subscription_name)) {
+      activeSub = (state.subscriptions || []).find(s => s.id === activeNode.subscription_id || s.name === activeNode.subscription_name);
+    }
+  }
   if (!activeSub) return;
   try {
     showToast(`Обновление «${activeSub.name}»...`);
@@ -1374,6 +1567,15 @@ function renderNodesList() {
     visibleNodes = nodes.filter(n => !n.subscription_id && !n.subscription_name);
   } else if (state.activeNodeCategory !== 'all') {
     visibleNodes = nodes.filter(n => n.subscription_id === state.activeNodeCategory || n.subscription_name === state.activeNodeCategory);
+  }
+
+  // Active selected node always pinned at the very top of the list
+  if (state.activeNodeId) {
+    visibleNodes = [...visibleNodes].sort((a, b) => {
+      if (a.id === state.activeNodeId) return -1;
+      if (b.id === state.activeNodeId) return 1;
+      return 0;
+    });
   }
 
   if (visibleNodes.length === 0) {
@@ -1429,8 +1631,12 @@ function renderNodesList() {
     card.addEventListener('click', async (e) => {
       if (e.target.closest('.btn-del-node')) return;
       state.activeNodeId = node.id;
-      document.querySelectorAll('.node-item').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
+      renderNodesList();
+
+      if (state.activeNodeCategory === 'all') {
+        renderNodeCategoryTabs();
+      }
+      updateDashboardSubWidget();
 
       // Update Dashboard Hero
       document.getElementById('hero-node-name').innerText = displayName;
@@ -2616,6 +2822,15 @@ async function initApp() {
   try {
     state.settings = await GetSettings();
     updatePrivacyBlurUI();
+
+    try {
+      const rawVer = await GetAppVersion();
+      const digitsOnly = (rawVer || '').replace(/^v/i, '').trim();
+      const railVerEl = document.getElementById('nav-rail-app-version');
+      if (railVerEl && digitsOnly) {
+        railVerEl.innerText = digitsOnly;
+      }
+    } catch (_) {}
 
     // Detect system language and apply effective language
     try {

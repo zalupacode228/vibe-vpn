@@ -397,28 +397,33 @@ func (a *App) AddSubscription(name string, url string) ([]models.Node, error) {
 
 	subID := fmt.Sprintf("sub_%d", time.Now().Unix())
 	settings := a.storage.LoadSettings()
-	parsedNodes, err := subs.FetchAndParse(url, subID, name, settings.UserAgent, settings.HWID)
+	fetchRes, err := subs.FetchAndParse(url, subID, name, settings.UserAgent, settings.HWID)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка загрузки подписки: %w", err)
 	}
 
 	subsList := a.storage.LoadSubscriptions()
 	newSub := models.Subscription{
-		ID:        subID,
-		Name:      name,
-		URL:       url,
-		UpdatedAt: time.Now().Format("02.01 15:04"),
-		Count:     len(parsedNodes),
+		ID:          subID,
+		Name:        name,
+		URL:         url,
+		UpdatedAt:   time.Now().Format("02.01 15:04"),
+		Count:       len(fetchRes.Nodes),
+		Upload:      fetchRes.Upload,
+		Download:    fetchRes.Download,
+		Total:       fetchRes.Total,
+		Expire:      fetchRes.Expire,
+		HasUserInfo: fetchRes.HasUserInfo,
 	}
 	subsList = append(subsList, newSub)
 	_ = a.storage.SaveSubscriptions(subsList)
 
 	// Merge into all nodes
 	allNodes := a.storage.LoadNodes()
-	allNodes = append(allNodes, parsedNodes...)
+	allNodes = append(allNodes, fetchRes.Nodes...)
 	_ = a.storage.SaveNodes(allNodes)
 
-	return parsedNodes, nil
+	return fetchRes.Nodes, nil
 }
 
 func (a *App) RefreshSubscription(id string) ([]models.Node, error) {
@@ -437,13 +442,18 @@ func (a *App) RefreshSubscription(id string) ([]models.Node, error) {
 	}
 
 	settings := a.storage.LoadSettings()
-	newNodes, err := subs.FetchAndParse(targetSub.URL, targetSub.ID, targetSub.Name, settings.UserAgent, settings.HWID)
+	fetchRes, err := subs.FetchAndParse(targetSub.URL, targetSub.ID, targetSub.Name, settings.UserAgent, settings.HWID)
 	if err != nil {
 		return nil, err
 	}
 
 	subsList[targetIdx].UpdatedAt = time.Now().Format("02.01 15:04")
-	subsList[targetIdx].Count = len(newNodes)
+	subsList[targetIdx].Count = len(fetchRes.Nodes)
+	subsList[targetIdx].Upload = fetchRes.Upload
+	subsList[targetIdx].Download = fetchRes.Download
+	subsList[targetIdx].Total = fetchRes.Total
+	subsList[targetIdx].Expire = fetchRes.Expire
+	subsList[targetIdx].HasUserInfo = fetchRes.HasUserInfo
 	_ = a.storage.SaveSubscriptions(subsList)
 
 	// Replace nodes for this sub
@@ -454,10 +464,10 @@ func (a *App) RefreshSubscription(id string) ([]models.Node, error) {
 			preserved = append(preserved, n)
 		}
 	}
-	preserved = append(preserved, newNodes...)
+	preserved = append(preserved, fetchRes.Nodes...)
 	_ = a.storage.SaveNodes(preserved)
 
-	return newNodes, nil
+	return fetchRes.Nodes, nil
 }
 
 func (a *App) DeleteSubscription(id string) error {
