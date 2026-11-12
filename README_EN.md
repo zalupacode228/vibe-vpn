@@ -25,13 +25,13 @@
 
 <div align="center">
 
-| **Dashboard (Dark Glassmorphism)** | **Servers & Nodes (Categorized)** |
+| **Dashboard (Connection & Telemetry)** | **Servers & Nodes (Subscriptions & Ping)** |
 |:---:|:---:|
-| <img src="assets/screenshots/dashboard_en.png" width="420" alt="Dashboard"/> | <img src="assets/screenshots/nodes_en.png" width="420" alt="Nodes"/> |
+| <img src="assets/screenshots/dashboard_en.png?v=1.0.6" width="420" alt="Dashboard"/> | <img src="assets/screenshots/nodes_en.png?v=1.0.6" width="420" alt="Nodes"/> |
 
-| **QR-Code Multi-Import** | **Settings & Localization (RU / EN)** |
+| **QR-Code Multi-Import** | **Client Settings & Preferences** |
 |:---:|:---:|
-| <img src="assets/screenshots/modal_qr_en.png" width="420" alt="QR Modal"/> | <img src="assets/screenshots/settings_en.png" width="420" alt="Settings"/> |
+| <img src="assets/screenshots/modal_qr_en.png?v=1.0.6" width="420" alt="QR Modal"/> | <img src="assets/screenshots/settings_en.png?v=1.0.6" width="420" alt="Settings"/> |
 
 </div>
 
@@ -98,10 +98,6 @@
 ### ⚙️ Customization & Privacy
 - **Custom User-Agent & HWID**: Tailor client identification and hardware ID when updating subscriptions to ensure maximum server compatibility.
 - **Privacy Blur Mode**: One-click blur of IP addresses, server domains, and private keys for safe livestreaming and screenshots.
-
-### 🌍 Bilingual Localization & System Auto-Detection
-- Automatically detects Windows system language at startup (Russian for RU/CIS systems, English for rest of world).
-- Instant on-the-fly language switching in Settings without restarting the application.
 
 ### 🎨 Design & Ergonomics
 - Polished Material 3 Dark theme (strict 16px grid rhythm, balanced typography contrast, clean visual accents).
