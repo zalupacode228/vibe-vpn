@@ -190,8 +190,29 @@ func ParseNodeLink(raw string) *models.Node {
 		}
 
 	case "hysteria2", "hy2":
-		node.Password = u.User.Username()
+		if u.User != nil {
+			node.Password = u.User.Username()
+		}
 		node.SNI = q.Get("sni")
+		node.Obfs = q.Get("obfs")
+		node.ObfsPassword = q.Get("obfs-password")
+		if node.ObfsPassword == "" {
+			node.ObfsPassword = q.Get("obfs_password")
+		}
+		node.Insecure = q.Get("insecure") == "1" || q.Get("allowInsecure") == "1"
+		if alpnStr := q.Get("alpn"); alpnStr != "" {
+			parts := strings.Split(alpnStr, ",")
+			var alpnList []string
+			for _, p := range parts {
+				p = strings.TrimSpace(p)
+				if p != "" {
+					alpnList = append(alpnList, p)
+				}
+			}
+			if len(alpnList) > 0 {
+				node.ALPN = alpnList
+			}
+		}
 		node.ProtocolLabel = "Hysteria 2"
 
 	case "ss":

@@ -339,11 +339,23 @@ func (b *ConfigBuilder) GenerateConfig(
 			if node.Password != "" {
 				proxyOut["password"] = node.Password
 			}
+			if node.Obfs != "" {
+				proxyOut["obfs"] = map[string]interface{}{
+					"type":     node.Obfs,
+					"password": node.ObfsPassword,
+				}
+			}
 			tlsMap := map[string]interface{}{
 				"enabled": true,
 			}
 			if serverSNI != "" {
 				tlsMap["server_name"] = serverSNI
+			}
+			if node.Insecure {
+				tlsMap["insecure"] = true
+			}
+			if len(node.ALPN) > 0 {
+				tlsMap["alpn"] = node.ALPN
 			}
 			proxyOut["tls"] = tlsMap
 		}

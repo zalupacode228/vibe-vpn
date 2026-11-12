@@ -23,6 +23,9 @@ type Node struct {
 	Network          string                 `json:"network,omitempty"`
 	Mode             string                 `json:"mode,omitempty"`
 	Encryption       string                 `json:"encryption,omitempty"`
+	Insecure         bool                   `json:"insecure,omitempty"`
+	Obfs             string                 `json:"obfs,omitempty"`
+	ObfsPassword     string                 `json:"obfs_password,omitempty"`
 	SubscriptionID   string                 `json:"subscription_id,omitempty"`
 	SubscriptionName string                 `json:"subscription_name,omitempty"`
 	Ping             int                    `json:"ping"`
