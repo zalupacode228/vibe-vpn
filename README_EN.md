@@ -7,17 +7,38 @@
 </p>
 
 ![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011%20x64-0078D6?logo=windows&logoColor=white)
+![Version](https://img.shields.io/badge/Version-v1.0.7-brightgreen.svg)
 ![Go](https://img.shields.io/badge/Go-1.23%2B-00ADD8?logo=go&logoColor=white)
 ![Wails](https://img.shields.io/badge/Wails-v2-DF0000?logo=wails&logoColor=white)
 ![Sing-Box](https://img.shields.io/badge/Core-sing--box%201.14-FF6B00?logo=box&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![i18n](https://img.shields.io/badge/Language-RU%20%7C%20EN-blueviolet.svg)
 
-**A fast, modern, and lightweight Windows VPN client featuring per-application Split Tunneling, Cloudflare WARP (AmneziaWG / MASQUE) generator and config import, smart domain & IP/CIDR geo-routing, real-time connection log viewer, and network noise filtering.**
+**A fast, modern, and lightweight Windows VPN client featuring per-application Split Tunneling, Cloudflare WARP (AmneziaWG / MASQUE) generator and config import, WARP Detour chained proxying, smart domain & IP/CIDR geo-routing, real-time connection log viewer, and network noise filtering.**
 
-[Download Latest Release](https://github.com/zalupacode228/vibe-vpn/releases/latest) • [Key Features](#-key-features) • [Building from Source](#-building-from-source)
+[Download Release v1.0.7 (.exe)](https://github.com/zalupacode228/vibe-vpn/releases/tag/v1.0.7) • [What's New](#-whats-new-in-v107) • [Key Features](#-key-features) • [Building from Source](#-building-from-source)
 
 </div>
+
+---
+
+## 🆕 What's New in v1.0.7
+
+- 🛡️ **WARP Detour (Clean IP / Chained Proxy)**:
+  - Route internet egress through Cloudflare WARP on top of any active upstream proxy (VLESS, Hysteria 2, Shadowsocks, Trojan). Hides the VPS IP address from destination sites, effortlessly bypassing datacenter blocks, Cloudflare turnstiles, and aggressive captchas.
+  - One-click instant toggle button `WARP Clean IP` right inside the main header.
+- ⚡ **Fastest Node Selection**:
+  - Automatically benchmarks and switches to the lowest-latency server in one click from the active server dropdown or the Servers panel.
+- 🌐 **Real Web Latency Test (Web Latency)**:
+  - Measures true end-to-end HTTP RTT (code 204) through the active tunnel to verified endpoints instead of superficial TCP handshakes.
+- ⛔ **Kill Switch (Leak Protection)**:
+  - Immediately blocks unencrypted internet traffic if the VPN tunnel drops unexpectedly until the connection is safely restored.
+- 🔄 **Background Subscription Auto-Update**:
+  - Automatically synchronizes subscription node lists every 24 hours in the background.
+- 💾 **Profile Backup & Restore**:
+  - One-click export and import of all user settings, subscriptions, custom nodes, and routing rules to/from a portable JSON file.
+- 📡 **Protocol-Aware Latency**:
+  - Native ICMP Echo measurement for UDP protocols (Hysteria 2 / TUIC) and optimized TCP RTT for VLESS Reality / XHTTP without timeouts.
 
 ---
 
