@@ -185,10 +185,6 @@ function detectNodeCountry(node) {
     }
   }
 
-  if (server.includes('zamik')) {
-    return 'DE';
-  }
-
   return 'VPN';
 }
 
