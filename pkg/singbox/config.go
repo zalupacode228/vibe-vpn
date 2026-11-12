@@ -37,10 +37,16 @@ var appHelpers = map[string][]string{
 	"spotify.exe":  {"spotifywebhelper.exe"},
 }
 
-type ConfigBuilder struct{}
+type ConfigBuilder struct {
+	warpNode *models.Node
+}
 
 func NewConfigBuilder() *ConfigBuilder {
 	return &ConfigBuilder{}
+}
+
+func (b *ConfigBuilder) SetWarpNode(wn *models.Node) {
+	b.warpNode = wn
 }
 
 func (b *ConfigBuilder) GenerateConfig(
@@ -65,6 +71,39 @@ func (b *ConfigBuilder) GenerateConfig(
 
 	var wgEndpoints []map[string]interface{}
 	var proxyOut map[string]interface{}
+
+	targetOutbound := "proxy-out"
+	warpDetourActive := settings.WarpDetour && node != nil && !isWireguard && !isMasque
+	if warpDetourActive {
+		targetOutbound = "warp-detour"
+		warpPrivKey := "aGVsbG93b3JsZGhlbGxvd29ybGRoZWxsb3dvcmxkMQ=="
+		var warpReserved []int
+		if b.warpNode != nil && b.warpNode.PrivateKey != "" {
+			warpPrivKey = b.warpNode.PrivateKey
+			warpReserved = b.warpNode.Reserved
+		}
+
+		peerObj := map[string]interface{}{
+			"address":     "162.159.192.1",
+			"port":        500,
+			"public_key":  "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
+			"allowed_ips": []string{"0.0.0.0/0", "::/0"},
+		}
+		if len(warpReserved) >= 3 {
+			peerObj["reserved"] = warpReserved
+		}
+
+		warpEndpoint := map[string]interface{}{
+			"type":        "wireguard",
+			"tag":         "warp-detour",
+			"detour":      "proxy-out",
+			"address":     []string{"172.16.0.2/32"},
+			"private_key": warpPrivKey,
+			"peers":       []interface{}{peerObj},
+			"mtu":         1280,
+		}
+		wgEndpoints = append(wgEndpoints, warpEndpoint)
+	}
 
 	if isWireguard && node != nil {
 		serverPort := node.Port
@@ -399,7 +438,7 @@ func (b *ConfigBuilder) GenerateConfig(
 	// 6. Custom Lists
 	for _, cl := range settings.CustomLists {
 		if cl.Enabled {
-			targetOut := "proxy-out"
+			targetOut := targetOutbound
 			if cl.Action == "direct" {
 				targetOut = "direct"
 			}
@@ -454,7 +493,7 @@ func (b *ConfigBuilder) GenerateConfig(
 		if len(processNames) > 0 || len(processPaths) > 0 {
 			entry := map[string]interface{}{
 				"action":   "route",
-				"outbound": "proxy-out",
+				"outbound": targetOutbound,
 			}
 			if len(processNames) > 0 {
 				entry["process_name"] = processNames
@@ -485,13 +524,13 @@ func (b *ConfigBuilder) GenerateConfig(
 		}
 		routeRules = append(routeRules, map[string]interface{}{
 			"action":   "route",
-			"outbound": "proxy-out",
+			"outbound": targetOutbound,
 		})
 
 	case "global":
 		routeRules = append(routeRules, map[string]interface{}{
 			"action":   "route",
-			"outbound": "proxy-out",
+			"outbound": targetOutbound,
 		})
 
 	default: // "direct"
@@ -547,7 +586,7 @@ func (b *ConfigBuilder) GenerateConfig(
 			"detour": "proxy-out",
 		}
 	} else if proxyOut != nil {
-		remoteDNSServer["detour"] = "proxy-out"
+		remoteDNSServer["detour"] = targetOutbound
 	}
 
 	dnsServers := []map[string]interface{}{
@@ -579,6 +618,11 @@ func (b *ConfigBuilder) GenerateConfig(
 		outbounds = append([]map[string]interface{}{proxyOut}, outbounds...)
 	}
 
+	finalRoute := "direct"
+	if settings.KillSwitch && mode == "global" {
+		finalRoute = "block"
+	}
+
 	config := map[string]interface{}{
 		"log": map[string]interface{}{
 			"level":     "info",
@@ -598,7 +642,7 @@ func (b *ConfigBuilder) GenerateConfig(
 				"address":                  []string{"172.19.0.1/30"},
 				"mtu":                      tunMTU,
 				"auto_route":               true,
-				"strict_route":             settings.StrictRoute,
+				"strict_route":             settings.StrictRoute || settings.KillSwitch,
 				"endpoint_independent_nat": true,
 				"stack":                    "system",
 			},
@@ -608,7 +652,7 @@ func (b *ConfigBuilder) GenerateConfig(
 			"default_domain_resolver": "direct-dns",
 			"rules":                   routeRules,
 			"auto_detect_interface":   true,
-			"final":                   "direct",
+			"final":                   finalRoute,
 		},
 		"experimental": map[string]interface{}{
 			"clash_api": map[string]interface{}{

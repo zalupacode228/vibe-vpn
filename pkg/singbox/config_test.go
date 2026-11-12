@@ -118,3 +118,53 @@ func TestGenerateConfigAWG(t *testing.T) {
 		t.Fatalf("sing-box check failed: %v\nOutput: %s\nConfig:\n%s", err, string(out), string(cfgBytes))
 	}
 }
+
+func TestGenerateConfigWarpDetour(t *testing.T) {
+	b := NewConfigBuilder()
+	node := &models.Node{
+		ID:          "vless-test",
+		Name:        "Test VLESS Reality with WARP Detour",
+		Protocol:    "vless",
+		Server:      "1.1.1.1",
+		Port:        443,
+		UUID:        "00000000-0000-0000-0000-000000000000",
+		Security:    "reality",
+		SNI:         "cloudflare.com",
+		Fingerprint: "chrome",
+		PublicKey:   "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
+		ShortID:     "0123456789abcdef",
+	}
+
+	settings := models.Settings{
+		SplitMode:   "global",
+		BypassLAN:   true,
+		BypassRU:    true,
+		AdBlock:     true,
+		StrictRoute: false,
+		KillSwitch:  true,
+		WarpDetour:  true,
+		MTU:         1400,
+	}
+
+	cfgBytes, err := b.GenerateConfig("global", nil, node, settings)
+	if err != nil {
+		t.Fatalf("GenerateConfig error: %v", err)
+	}
+
+	tmpFile := filepath.Join(os.TempDir(), "test_warp_detour_check.json")
+	if err := os.WriteFile(tmpFile, cfgBytes, 0644); err != nil {
+		t.Fatalf("Failed to write tmp file: %v", err)
+	}
+	defer os.Remove(tmpFile)
+
+	appData := os.Getenv("APPDATA")
+	sbPath := filepath.Join(appData, "VPN", "core", "sing-box.exe")
+	if _, err := os.Stat(sbPath); err != nil {
+		t.Skip("sing-box.exe not found at APPDATA/VPN/core")
+	}
+
+	out, err := exec.Command(sbPath, "check", "-c", tmpFile).CombinedOutput()
+	if err != nil {
+		t.Fatalf("sing-box check failed: %v\nOutput: %s\nConfig:\n%s", err, string(out), string(cfgBytes))
+	}
+}

@@ -57,8 +57,12 @@ func (s *Storage) LoadSettings() models.Settings {
 		TunMTU:         1400,
 		RemoteDNS:      "https://1.1.1.1/dns-query",
 		DirectDNS:      "local",
-		UserAgent:      "v2rayNG/1.8.5",
-		HWID:           GetMachineHWID(),
+		UserAgent:               "v2rayNG/1.8.5",
+		HWID:                    GetMachineHWID(),
+		AutoUpdateSubs:          true,
+		AutoUpdateIntervalHours: 24,
+		KillSwitch:              false,
+		WarpDetour:              false,
 	}
 
 	data, err := os.ReadFile(s.settingsPath)
@@ -66,7 +70,7 @@ func (s *Storage) LoadSettings() models.Settings {
 		return defaultSettings
 	}
 
-	var loaded models.Settings
+	loaded := defaultSettings
 	if err := json.Unmarshal(data, &loaded); err != nil {
 		return defaultSettings
 	}
@@ -124,6 +128,10 @@ func (s *Storage) SaveSettings(settings models.Settings) error {
 	}
 	existing["user_agent"] = settings.UserAgent
 	existing["hwid"] = settings.HWID
+	existing["kill_switch"] = settings.KillSwitch
+	existing["warp_detour"] = settings.WarpDetour
+	existing["auto_update_subs"] = settings.AutoUpdateSubs
+	existing["auto_update_interval_hours"] = settings.AutoUpdateIntervalHours
 
 	data, err := json.MarshalIndent(existing, "", "  ")
 	if err != nil {

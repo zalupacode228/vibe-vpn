@@ -198,4 +198,29 @@ export function GetDefaultHWID() {
   return window['go']['main']['App']['GetDefaultHWID']();
 }
 
+export function ExportProfile() {
+  return window['go']['main']['App']['ExportProfile']();
+}
+
+export function ImportProfile() {
+  return window['go']['main']['App']['ImportProfile']();
+}
+
+export function SelectFastestNode() {
+  return window['go']['main']['App']['SelectFastestNode']();
+}
+
+export function TestWebLatency() {
+  return window['go']['main']['App']['TestWebLatency']();
+}
+
+export function ToggleKillSwitch() {
+  return window['go']['main']['App']['ToggleKillSwitch']();
+}
+
+export function ToggleWarpDetour() {
+  return window['go']['main']['App']['ToggleWarpDetour']();
+}
+
+
 

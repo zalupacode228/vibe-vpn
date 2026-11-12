@@ -2649,6 +2649,93 @@ body {
   color: #fca5a5;
 }
 
+.btn-hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-pill);
+  color: var(--on-surface-variant);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  margin-left: 4px;
+}
+
+.btn-hero-pill:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--on-surface);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn-hero-pill.active {
+  background: rgba(208, 188, 255, 0.16);
+  border-color: rgba(208, 188, 255, 0.4);
+  color: var(--primary);
+}
+
+.warp-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--on-surface-muted);
+  transition: background 0.2s ease;
+}
+
+.btn-hero-pill.active .warp-badge-dot {
+  background: #00C853;
+  box-shadow: 0 0 6px rgba(0, 200, 83, 0.6);
+}
+
+.btn-micro-test {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-micro-test:hover {
+  background: rgba(208, 188, 255, 0.15);
+  border-color: rgba(208, 188, 255, 0.35);
+  color: var(--primary);
+}
+
+.node-picker-fastest-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  background: rgba(251, 192, 45, 0.12);
+  border: 1px solid rgba(251, 192, 45, 0.35);
+  color: #FBC02D;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.node-picker-fastest-pill:hover {
+  background: rgba(251, 192, 45, 0.22);
+  border-color: rgba(251, 192, 45, 0.6);
+  transform: translateY(-1px);
+}
+
 .modal-card.modal-card-large {
   max-width: 750px;
   width: 92%;
@@ -3126,6 +3213,13 @@ body {
   font-weight: 700;
   color: var(--on-surface);
   letter-spacing: -0.2px;
+  transition: filter 0.2s ease;
+  cursor: pointer;
+}
+
+.node-tab-chip-name {
+  transition: filter 0.2s ease;
+  display: inline-block;
 }
 
 .sub-status-badge {

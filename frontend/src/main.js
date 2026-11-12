@@ -46,7 +46,13 @@ import {
   DownloadAndApplyUpdate,
   GetAppVersion,
   GenerateRandomHWID,
-  GetDefaultHWID
+  GetDefaultHWID,
+  TestWebLatency,
+  SelectFastestNode,
+  ToggleWarpDetour,
+  ToggleKillSwitch,
+  ExportProfile,
+  ImportProfile
 } from '../wailsjs/go/main/App';
 import { EventsOn } from '../wailsjs/runtime/runtime';
 
@@ -343,8 +349,8 @@ function renderFlagSVG(cc, width = 24, height = 16) {
 function updatePrivacyBlurUI() {
   const isBlurred = !!state.settings.privacy_blur;
 
-  // Toggle blur simultaneously on all privacy targets: server IPs, node names, hero node name
-  document.querySelectorAll('.privacy-target, .node-name, .node-server-ip').forEach(el => {
+  // Toggle blur simultaneously on all privacy targets: server IPs, node names, hero node name, subscription title/name
+  document.querySelectorAll('.privacy-target, .node-name, .node-server-ip, #sub-traffic-name, .sub-traffic-name, .node-sub-name, .node-tab-chip-name').forEach(el => {
     el.classList.toggle('privacy-blurred', isBlurred);
   });
 
@@ -381,6 +387,7 @@ async function togglePrivacyBlur() {
 document.getElementById('dash-eye-btn')?.addEventListener('click', togglePrivacyBlur);
 document.getElementById('nodes-eye-btn')?.addEventListener('click', togglePrivacyBlur);
 document.getElementById('stat-server-ip')?.addEventListener('click', togglePrivacyBlur);
+document.getElementById('sub-traffic-name')?.addEventListener('click', togglePrivacyBlur);
 document.getElementById('set-privacy-blur')?.addEventListener('change', async (e) => {
   state.settings.privacy_blur = e.target.checked;
   updatePrivacyBlurUI();
@@ -390,6 +397,14 @@ document.getElementById('set-privacy-blur')?.addEventListener('change', async (e
     console.error('Save privacy blur error:', err);
   }
 });
+
+// Bind Web Latency Test & Hero WARP Detour
+document.getElementById('btn-web-test')?.addEventListener('click', handleWebTest);
+document.getElementById('btn-hero-warp-detour')?.addEventListener('click', handleWarpDetourToggle);
+
+// Bind Backup & Restore Profile
+document.getElementById('btn-export-backup')?.addEventListener('click', handleExportBackup);
+document.getElementById('btn-import-backup')?.addEventListener('click', handleImportBackup);
 
 // Window Controls
 document.getElementById('btn-win-min').addEventListener('click', () => WindowMin());
@@ -427,6 +442,148 @@ document.querySelectorAll('.nav-item').forEach(item => {
     if (page) switchPage(page);
   });
 });
+
+// ==================== TIER-1 POWER FEATURES ====================
+
+// 1. Select Fastest Node
+async function handleSelectFastestNode() {
+  showToast(t('select_fastest') || 'Поиск лучшего сервера...');
+  try {
+    const best = await SelectFastestNode();
+    if (!best || !best.id) {
+      showToast('Нет доступных узлов');
+      return;
+    }
+    state.activeNodeId = best.id;
+    const cc = detectNodeCountry(best);
+    const displayName = cleanNodeDisplayName(best.name);
+    const protoLabel = best.protocol_label || (best.protocol ? best.protocol.toUpperCase() : 'VLESS');
+
+    // Update Hero immediately
+    const heroNodeName = document.getElementById('hero-node-name');
+    if (heroNodeName) heroNodeName.innerText = displayName;
+    const heroProto = document.getElementById('hero-protocol-badge');
+    if (heroProto) heroProto.innerText = protoLabel;
+    const heroFlagEl = document.getElementById('hero-country-flag');
+    if (heroFlagEl) {
+      heroFlagEl.innerHTML = renderFlagSVG(cc, 22, 14);
+      heroFlagEl.title = `Страна: ${cc}`;
+    }
+
+    renderNodePickerDropdown();
+    renderNodesList();
+    renderNodeCategoryTabs();
+    updateDashboardSubWidget();
+    const pingStr = best.ping > 0 ? ` (${best.ping} ms)` : '';
+    showToast(`${t('fastest_selected') || 'Выбран лучший узел'}: ${displayName}${pingStr}`);
+  } catch (err) {
+    showToast(`Ошибка выбора: ${err}`);
+  }
+}
+
+// 2. Real Web Latency Test (HTTP 204)
+async function handleWebTest() {
+  const btn = document.getElementById('btn-web-test');
+  if (btn) btn.classList.add('loading');
+  showToast(t('web_test_running') || 'Проверка веб-соединения (HTTP 204)...');
+  try {
+    const res = await TestWebLatency();
+    if (res && res.ok) {
+      const ms = Math.round(res.latency || 0);
+      const okMsg = (t('web_test_ok') || 'Веб: {latency} ms (204 OK)').replace('{latency}', ms);
+      showToast(okMsg);
+      const pingEl = document.getElementById('stat-ping');
+      if (pingEl) {
+        pingEl.innerText = `${ms} ms`;
+      }
+    } else {
+      const errMsg = res && res.error ? res.error : '';
+      showToast(`${t('web_test_fail') || 'Тест не пройден'}${errMsg ? ': ' + errMsg : ''}`);
+    }
+  } catch (err) {
+    showToast(`${t('web_test_fail')}: ${err}`);
+  } finally {
+    if (btn) btn.classList.remove('loading');
+  }
+}
+
+// 3. WARP Detour Toggle & Badge
+function updateWarpHeroBadge() {
+  const btn = document.getElementById('btn-hero-warp-detour');
+  if (!btn) return;
+  const isWarp = !!state.settings.warp_detour;
+  if (isWarp) {
+    btn.classList.add('active');
+    btn.setAttribute('aria-pressed', 'true');
+    btn.title = 'WARP Detour: ВКЛ (чистый IP Cloudflare для зарубежных сервисов)';
+  } else {
+    btn.classList.remove('active');
+    btn.setAttribute('aria-pressed', 'false');
+    btn.title = 'WARP Detour: ВЫКЛ (нажмите для включения маскировки через Cloudflare)';
+  }
+}
+
+let isTogglingWarp = false;
+async function handleWarpDetourToggle() {
+  if (isTogglingWarp) return;
+  isTogglingWarp = true;
+  const btn = document.getElementById('btn-hero-warp-detour');
+  if (btn) {
+    btn.style.pointerEvents = 'none';
+    btn.style.opacity = '0.6';
+  }
+  try {
+    const enabled = await ToggleWarpDetour();
+    state.settings.warp_detour = enabled;
+    updateWarpHeroBadge();
+    const setWarp = document.getElementById('set-warp-detour');
+    if (setWarp) setWarp.checked = enabled;
+    showToast(enabled ? 'WARP Detour: ВКЛ (трафик идет через чистый IP Cloudflare)' : 'WARP Detour: ВЫКЛ');
+  } catch (err) {
+    showToast(`Ошибка переключения WARP Detour: ${err}`);
+  } finally {
+    isTogglingWarp = false;
+    if (btn) {
+      btn.style.pointerEvents = 'auto';
+      btn.style.opacity = '1';
+    }
+  }
+}
+
+// 4. Backup & Restore Profile
+async function handleExportBackup() {
+  try {
+    const path = await ExportProfile();
+    if (path) {
+      showToast(t('backup_export_success') || 'Резервная копия успешно экспортирована');
+    }
+  } catch (err) {
+    showToast(`Ошибка экспорта: ${err}`);
+  }
+}
+
+async function handleImportBackup() {
+  try {
+    const path = await ImportProfile();
+    if (path) {
+      showToast(t('backup_import_success') || 'Профиль успешно восстановлен');
+      state.settings = await GetSettings();
+      state.nodes = (await GetNodes()) || [];
+      state.subscriptions = (await GetSubscriptions()) || [];
+      try {
+        state.activeNodeId = await GetActiveNodeID();
+      } catch (_) {}
+      updateStatusUI();
+      updateHeroNodeDisplay();
+      updateWarpHeroBadge();
+      renderNodeCategoryTabs();
+      renderNodesList();
+      loadSettingsPage();
+    }
+  } catch (err) {
+    showToast(`${t('backup_import_error') || 'Ошибка импорта'}: ${err}`);
+  }
+}
 
 // ==================== NODE PICKER DROPDOWN ====================
 const nodePickerDropdown = document.getElementById('node-picker-dropdown');
@@ -474,7 +631,13 @@ function renderNodePickerDropdown() {
   });
 
   let html = `
-    <div class="node-picker-header">Выбор сервера</div>
+    <div class="node-picker-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <span>${t('hero_server_selection') || 'Выбор сервера'}</span>
+      <button id="btn-select-fastest-drop" class="node-picker-fastest-pill" title="${t('select_fastest') || 'Выбрать самый быстрый узел'}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+        <span>${t('btn_select_fastest') || 'Лучший'}</span>
+      </button>
+    </div>
     <div class="node-picker-divider"></div>
   `;
 
@@ -564,6 +727,13 @@ function renderNodePickerDropdown() {
         setTimeout(pollTelemetry, 500);
       }
     });
+  });
+
+  // "Выбрать лучший" button in dropdown header
+  document.getElementById('btn-select-fastest-drop')?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    closeNodePicker();
+    await handleSelectFastestNode();
   });
 
   // "Все узлы и подписки →" link
@@ -710,6 +880,7 @@ function updateStatusUI() {
     titleBadge.innerText = t('status_disconnected');
     heroText.innerText = t('status_disconnected');
   }
+  updateWarpHeroBadge();
 }
 
 // Telemetry & Graph
@@ -1302,7 +1473,7 @@ function renderNodeCategoryTabs() {
     const isActive = state.activeNodeCategory === sub.id;
     tabsHtml += `
       <button class="node-tab-chip ${isActive ? 'active' : ''}" data-cat="${sub.id}">
-        ${sub.name} (${subCount})
+        <span class="node-tab-chip-name privacy-target ${state.settings.privacy_blur ? 'privacy-blurred' : ''}">${sub.name}</span> (${subCount})
       </button>
     `;
   });
@@ -1341,7 +1512,10 @@ function renderNodeCategoryTabs() {
     
     // Name
     const nameEl = document.getElementById('sub-traffic-name');
-    if (nameEl) nameEl.innerText = activeSub.name;
+    if (nameEl) {
+      nameEl.innerText = activeSub.name;
+      nameEl.classList.toggle('privacy-blurred', !!state.settings.privacy_blur);
+    }
 
     // Status badge
     const badgeEl = document.getElementById('sub-status-badge');
@@ -1698,6 +1872,9 @@ document.getElementById('btn-ping-all').addEventListener('click', async () => {
     btn.style.pointerEvents = 'auto';
   }
 });
+
+// Select fastest node from nodes page
+document.getElementById('btn-select-fastest-nodes')?.addEventListener('click', handleSelectFastestNode);
 
 // WARP Modal
 const modalWarp = document.getElementById('modal-warp');
@@ -2304,6 +2481,12 @@ async function loadSettingsPage() {
     }
     document.getElementById('set-bypass-lan').checked = !!state.settings.bypass_lan;
     document.getElementById('set-strict-route').checked = !!state.settings.strict_route;
+    const ksEl = document.getElementById('set-killswitch');
+    if (ksEl) ksEl.checked = !!state.settings.kill_switch;
+    const wdEl = document.getElementById('set-warp-detour');
+    if (wdEl) wdEl.checked = !!state.settings.warp_detour;
+    const asEl = document.getElementById('set-auto-subs');
+    if (asEl) asEl.checked = state.settings.auto_update_subs !== false;
     document.getElementById('set-remote-dns').value = state.settings.remote_dns || 'https://1.1.1.1/dns-query';
     document.getElementById('set-direct-dns').value = state.settings.direct_dns || 'local';
     document.getElementById('set-mtu').value = state.settings.mtu || 1400;
@@ -2339,6 +2522,12 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
     }
     state.settings.bypass_lan = document.getElementById('set-bypass-lan').checked;
     state.settings.strict_route = document.getElementById('set-strict-route').checked;
+    const ksEl = document.getElementById('set-killswitch');
+    if (ksEl) state.settings.kill_switch = ksEl.checked;
+    const wdEl = document.getElementById('set-warp-detour');
+    if (wdEl) state.settings.warp_detour = wdEl.checked;
+    const asEl = document.getElementById('set-auto-subs');
+    if (asEl) state.settings.auto_update_subs = asEl.checked;
     state.settings.remote_dns = document.getElementById('set-remote-dns').value.trim();
     state.settings.direct_dns = document.getElementById('set-direct-dns').value.trim();
     state.settings.mtu = parseInt(document.getElementById('set-mtu').value, 10) || 1400;
@@ -2363,6 +2552,7 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
     renderNodeCategoryTabs();
     renderNodesList();
     updatePrivacyBlurUI();
+    updateWarpHeroBadge();
     showToast(t('toast_settings_saved'));
   } catch (err) {
     showToast(`${t('settings_error_save')}: ${err}`);

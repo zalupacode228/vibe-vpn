@@ -27,11 +27,11 @@
 
 | **Dashboard (Connection & Telemetry)** | **Servers & Nodes (Subscriptions & Ping)** |
 |:---:|:---:|
-| <img src="assets/screenshots/dashboard_en.png?v=1.0.6" width="420" alt="Dashboard"/> | <img src="assets/screenshots/nodes_en.png?v=1.0.6" width="420" alt="Nodes"/> |
+| <img src="assets/screenshots/dashboard_en.png?v=1.0.7" width="420" alt="Dashboard"/> | <img src="assets/screenshots/nodes_en.png?v=1.0.7" width="420" alt="Nodes"/> |
 
 | **QR-Code Multi-Import** | **Client Settings & Preferences** |
 |:---:|:---:|
-| <img src="assets/screenshots/modal_qr_en.png?v=1.0.6" width="420" alt="QR Modal"/> | <img src="assets/screenshots/settings_en.png?v=1.0.6" width="420" alt="Settings"/> |
+| <img src="assets/screenshots/modal_qr_en.png?v=1.0.7" width="420" alt="QR Modal"/> | <img src="assets/screenshots/settings_en.png?v=1.0.7" width="420" alt="Settings"/> |
 
 </div>
 
@@ -48,15 +48,24 @@
 - Automatically lists running Windows processes with their real-time system icons.
 - Ability to pick and add any `.exe` application via the native Windows file dialog.
 
-### 🛡️ Cloudflare WARP: Generator & Config Import (.conf)
+### 🛡️ Cloudflare WARP & WARP Detour (Clean IP)
+- **WARP Detour (Clean IP)**: Route outbound proxy traffic through Cloudflare's residential network. International services (ChatGPT, Claude, Netflix) see a clean IP without datacenter blocks or captchas.
 - **Built-in Generator**:
   - **AmneziaWG (AWG)**: Anti-censorship obfuscation using randomized junk packets (`Jc`, `Jmin`, `Jmax`, `S1`–`S4`, `H1`–`H4`) to defeat DPI filters.
   - **MASQUE / HTTP/3**: Web traffic disguise over QUIC UDP port 443.
   - One-click Cloudflare client key registration and peer negotiation.
 - **Config Import**:
-  - Load existing `.conf`, `.wireguard`, `.txt` config files via native file picker.
-  - Direct paste of raw config text.
-  - Full support for AmneziaWG obfuscation parameters and `Reserved` / `ClientID` formats (comma-separated, array, or Base64).
+  - Load existing `.conf`, `.wireguard`, `.txt` config files via native file picker or clipboard with full AmneziaWG parameter parsing.
+
+### ⚡ Fastest Server Selection & Real Web Latency
+- **⚡ Best Node**: Automatically selects and switches to the lowest-latency server in one click from the dropdown or nodes panel.
+- **🌐 Real Web Latency Test (HTTP 204)**: Measures end-to-end data delivery across the active tunnel instead of superficial TCP handshakes.
+- **Protocol-Aware Ping**: Measures true TCP RTT for Reality/TLS and system ICMP Echo for UDP protocols (Hysteria 2 / WireGuard).
+
+### ⛔ Leak Protection & Backup Sync
+- **Kill Switch**: Blocks all internet traffic outside the tunnel in case of unexpected VPN disconnection.
+- **Background Subscription Auto-Update**: Silently updates subscription nodes every 24 hours and at startup.
+- **One-Click Profile Backup**: Export and import settings, subscriptions, nodes, and custom rules as a single `.json` file.
 
 ### 📋 Connection Logs Viewer (Real-Time Core Logs)
 - Integrated sing-box live log viewer directly accessible from the dashboard.
@@ -108,7 +117,7 @@
 ## 🚀 Download & Installation
 
 1. Go to the [Releases](https://github.com/zalupacode228/vibe-vpn/releases/latest) page.
-2. Download the latest `VibeVPN-v1.0.6-Windows-x64.exe` (or `VPN.exe`).
+2. Download the latest `VibeVPN-v1.0.7-Windows-x64.exe` (or `VPN.exe`).
 3. Run the executable.
    > **Note**: Requires Windows 10 or 11 (64-bit). Administrator privileges are required to create the TUN network adapter (`wintun.dll`).
 
