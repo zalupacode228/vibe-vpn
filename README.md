@@ -25,13 +25,13 @@
 
 <div align="center">
 
-| **Главный экран (Тёмный неоморфизм)** | **Серверы и Узлы (Категории и пинг)** |
+| **Главный экран (Подключение и трафик)** | **Серверы и Узлы (Списки и пинг)** |
 |:---:|:---:|
-| <img src="assets/screenshots/dashboard_ru.png" width="420" alt="Dashboard"/> | <img src="assets/screenshots/nodes_ru.png" width="420" alt="Nodes"/> |
+| <img src="assets/screenshots/dashboard_ru.png?v=1.0.6" width="420" alt="Dashboard"/> | <img src="assets/screenshots/nodes_ru.png?v=1.0.6" width="420" alt="Nodes"/> |
 
-| **Универсальный QR-сканер** | **Настройки и Язык (RU / EN)** |
+| **Универсальный QR-сканер** | **Параметры и настройки клиента** |
 |:---:|:---:|
-| <img src="assets/screenshots/modal_qr_ru.png" width="420" alt="QR Modal"/> | <img src="assets/screenshots/settings_ru.png" width="420" alt="Settings"/> |
+| <img src="assets/screenshots/modal_qr_ru.png?v=1.0.6" width="420" alt="QR Modal"/> | <img src="assets/screenshots/settings_ru.png?v=1.0.6" width="420" alt="Settings"/> |
 
 </div>
 
@@ -98,10 +98,6 @@
 ### ⚙️ Кастомизация и безопасность
 - **Кастомный User-Agent и HWID**: тонкая настройка идентификации клиента при обновлении подписок для полной совместимости с серверами.
 - **Режим приватности (Privacy Blur)**: скрытие IP-адресов, доменов и ключей на лету для безопасных трансляций и скриншотов.
-
-### 🌍 Двуязычный интерфейс (Русский и English)
-- Автоматически определяет системный язык Windows при старте (русский для RU-региона, английский для остальных).
-- Мгновенное переключение языка в Настройках без перезапуска приложения.
 
 ### 🎨 Дизайн и эргономика
 - Интерфейс Material 3 Dark (строгий ритм 16px, гармоничная палитра, оптимизированный контраст шрифтов).
