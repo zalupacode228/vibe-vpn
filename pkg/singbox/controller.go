@@ -34,33 +34,22 @@ type Controller struct {
 }
 
 func NewController() *Controller {
-	appData := os.Getenv("APPDATA")
-	appDataCore := filepath.Join(appData, "VPN", "core", "sing-box.exe")
-	configPath := filepath.Join(appData, "VPN", "config.json")
-
-	// Check relative to executable first
-	var corePath string
-	if exe, err := os.Executable(); err == nil {
-		exeDir := filepath.Dir(exe)
-		candidate := filepath.Join(exeDir, "assets", "core", "sing-box.exe")
-		if _, err := os.Stat(candidate); err == nil {
-			corePath = candidate
-		}
-	}
-
-	if corePath == "" {
-		if _, err := os.Stat(appDataCore); err == nil {
-			corePath = appDataCore
-		} else {
-			corePath = "sing-box.exe"
-		}
-	}
-
 	return &Controller{
-		corePath:   corePath,
-		configPath: configPath,
+		corePath:   resolveCorePath(),
+		configPath: filepath.Join(os.Getenv("APPDATA"), "VPN", "config.json"),
 		status:     "Отключено",
 	}
+}
+
+// resolveCorePath is re-run in Start: NewController runs before startup() unpacks the embedded core.
+func resolveCorePath() string {
+	if exe, err := os.Executable(); err == nil {
+		candidate := filepath.Join(filepath.Dir(exe), "assets", "core", "sing-box.exe")
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
+		}
+	}
+	return filepath.Join(os.Getenv("APPDATA"), "VPN", "core", "sing-box.exe")
 }
 
 func (c *Controller) Start(configBytes []byte) error {
@@ -85,6 +74,7 @@ func (c *Controller) Start(configBytes []byte) error {
 	}
 
 	// Verify sing-box binary exists
+	c.corePath = resolveCorePath()
 	if _, err := os.Stat(c.corePath); err != nil {
 		return fmt.Errorf("sing-box binary not found at %s", c.corePath)
 	}
