@@ -7,7 +7,7 @@
 </p>
 
 ![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011%20x64-0078D6?logo=windows&logoColor=white)
-![Version](https://img.shields.io/badge/Version-v1.0.7-brightgreen.svg)
+![Version](https://img.shields.io/badge/Version-v1.0.8-brightgreen.svg)
 ![Go](https://img.shields.io/badge/Go-1.23%2B-00ADD8?logo=go&logoColor=white)
 ![Wails](https://img.shields.io/badge/Wails-v2-DF0000?logo=wails&logoColor=white)
 ![Sing-Box](https://img.shields.io/badge/Core-sing--box%201.14-FF6B00?logo=box&logoColor=white)
@@ -16,9 +16,23 @@
 
 **A fast, modern, and lightweight Windows VPN client featuring per-application Split Tunneling, Cloudflare WARP (AmneziaWG / MASQUE) generator and config import, WARP Detour chained proxying, smart domain & IP/CIDR geo-routing, real-time connection log viewer, and network noise filtering.**
 
-[Download Release v1.0.7 (.exe)](https://github.com/zalupacode228/vibe-vpn/releases/tag/v1.0.7) • [What's New](#-whats-new-in-v107) • [Key Features](#-key-features) • [Building from Source](#-building-from-source)
+[Download Release v1.0.8 (.exe)](https://github.com/zalupacode228/vibe-vpn/releases/tag/v1.0.8) • [What's New](#-whats-new-in-v108) • [Key Features](#-key-features) • [Building from Source](#-building-from-source)
 
 </div>
+
+---
+
+## 🆕 What's New in v1.0.8
+
+- 🌐 **Robust TUN Network Stack (`mixed` / gVisor)**:
+  - Switched the virtual Wintun network stack to `mixed` (integrated userspace Google gVisor stack).
+  - Fixed Windows dropping TCP packets when running elevated without the optional background Windows service `lxd` (DNS resolved, but web pages timed out).
+  - Eliminated Firefox captive portal loops (`firefox-portal-detection.com`) and routing metric conflicts.
+- 🧹 **Zero Junk WebView2 Directory Isolation**:
+  - Pinned Microsoft WebView2 user data profile (`WebviewUserDataPath`) strictly to `%LOCALAPPDATA%\VPN\webview2`.
+  - The client no longer generates Chromium runtime folders (`Crashpad`, `ShaderCache`, `Default`, etc.) next to the executable when launched from `Downloads` or `Desktop`.
+- 🛡️ **Hysteria 2 Salamander & TLS Patches**:
+  - Full support for Salamander obfs/obfs-password protocol obfuscation, custom ALPN negotiation, and `insecure` flag support.
 
 ---
 
@@ -138,7 +152,7 @@
 ## 🚀 Download & Installation
 
 1. Go to the [Releases](https://github.com/zalupacode228/vibe-vpn/releases/latest) page.
-2. Download the latest `VibeVPN-v1.0.7-Windows-x64.exe` (or `VPN.exe`).
+2. Download the latest `VibeVPN-v1.0.8-Windows-x64.exe` (or `VPN.exe`).
 3. Run the executable.
    > **Note**: Requires Windows 10 or 11 (64-bit). Administrator privileges are required to create the TUN network adapter (`wintun.dll`).
 
