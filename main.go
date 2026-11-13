@@ -115,6 +115,11 @@ func main() {
 
 	app := NewApp()
 
+	wvDataPath := filepath.Join(os.Getenv("LOCALAPPDATA"), "VPN", "webview2")
+	if os.Getenv("LOCALAPPDATA") == "" {
+		wvDataPath = filepath.Join(os.Getenv("APPDATA"), "VPN", "webview2")
+	}
+
 	err := wails.Run(&options.App{
 		Title:            "VPN",
 		Width:            1000,
@@ -150,6 +155,7 @@ func main() {
 			DisableWindowIcon:    false,
 			BackdropType:         windows.None,
 			Theme:                windows.Dark,
+			WebviewUserDataPath:  wvDataPath,
 		},
 	})
 
