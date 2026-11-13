@@ -55,12 +55,14 @@ func NewApp() *App {
 		activeID = nodes[0].ID
 	}
 
-	return &App{
+	app := &App{
 		storage:      s,
 		controller:   singbox.NewController(),
 		builder:      singbox.NewConfigBuilder(),
 		activeNodeID: activeID,
 	}
+	app.unpackEmbeddedCore()
+	return app
 }
 
 func (a *App) startup(ctx context.Context) {
