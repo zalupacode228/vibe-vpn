@@ -16,43 +16,9 @@
 
 **A fast, modern, and lightweight Windows VPN client featuring per-application Split Tunneling, Cloudflare WARP (AmneziaWG / MASQUE) generator and config import, WARP Detour chained proxying, smart domain & IP/CIDR geo-routing, real-time connection log viewer, and network noise filtering.**
 
-[Download Release v1.0.8 (.exe)](https://github.com/zalupacode228/vibe-vpn/releases/tag/v1.0.8) • [What's New](#-whats-new-in-v108) • [Key Features](#-key-features) • [Building from Source](#-building-from-source)
+[Download Release v1.0.8 (.exe)](https://github.com/zalupacode228/vibe-vpn/releases/tag/v1.0.8) • [Key Features](#-key-features) • [Screenshots](#-screenshots) • [Building from Source](#-building-from-source)
 
 </div>
-
----
-
-## 🆕 What's New in v1.0.8
-
-- 🌐 **Robust TUN Network Stack (`mixed` / gVisor)**:
-  - Switched the virtual Wintun network stack to `mixed` (integrated userspace Google gVisor stack).
-  - Fixed Windows dropping TCP packets when running elevated without the optional background Windows service `lxd` (DNS resolved, but web pages timed out).
-  - Eliminated Firefox captive portal loops (`firefox-portal-detection.com`) and routing metric conflicts.
-- 🧹 **Zero Junk WebView2 Directory Isolation**:
-  - Pinned Microsoft WebView2 user data profile (`WebviewUserDataPath`) strictly to `%LOCALAPPDATA%\VPN\webview2`.
-  - The client no longer generates Chromium runtime folders (`Crashpad`, `ShaderCache`, `Default`, etc.) next to the executable when launched from `Downloads` or `Desktop`.
-- 🛡️ **Hysteria 2 Salamander & TLS Patches**:
-  - Full support for Salamander obfs/obfs-password protocol obfuscation, custom ALPN negotiation, and `insecure` flag support.
-
----
-
-## 🆕 What's New in v1.0.7
-
-- 🛡️ **WARP Detour (Clean IP / Chained Proxy)**:
-  - Route internet egress through Cloudflare WARP on top of any active upstream proxy (VLESS, Hysteria 2, Shadowsocks, Trojan). Hides the VPS IP address from destination sites, effortlessly bypassing datacenter blocks, Cloudflare turnstiles, and aggressive captchas.
-  - One-click instant toggle button `WARP Clean IP` right inside the main header.
-- ⚡ **Fastest Node Selection**:
-  - Automatically benchmarks and switches to the lowest-latency server in one click from the active server dropdown or the Servers panel.
-- 🌐 **Real Web Latency Test (Web Latency)**:
-  - Measures true end-to-end HTTP RTT (code 204) through the active tunnel to verified endpoints instead of superficial TCP handshakes.
-- ⛔ **Kill Switch (Leak Protection)**:
-  - Immediately blocks unencrypted internet traffic if the VPN tunnel drops unexpectedly until the connection is safely restored.
-- 🔄 **Background Subscription Auto-Update**:
-  - Automatically synchronizes subscription node lists every 24 hours in the background.
-- 💾 **Profile Backup & Restore**:
-  - One-click export and import of all user settings, subscriptions, custom nodes, and routing rules to/from a portable JSON file.
-- 📡 **Protocol-Aware Latency**:
-  - Native ICMP Echo measurement for UDP protocols (Hysteria 2 / TUIC) and optimized TCP RTT for VLESS Reality / XHTTP without timeouts.
 
 ---
 
