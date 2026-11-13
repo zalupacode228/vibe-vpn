@@ -656,7 +656,7 @@ func (b *ConfigBuilder) GenerateConfig(
 				"auto_route":               true,
 				"strict_route":             settings.StrictRoute || settings.KillSwitch,
 				"endpoint_independent_nat": true,
-				"stack":                    "system",
+				"stack":                    "mixed",
 			},
 		},
 		"outbounds": outbounds,
