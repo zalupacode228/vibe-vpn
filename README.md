@@ -7,7 +7,7 @@
 </p>
 
 ![Platform](https://img.shields.io/badge/Платформа-Windows%2010%20%2F%2011%20x64-0078D6?logo=windows&logoColor=white)
-![Version](https://img.shields.io/badge/Версия-v1.0.7-brightgreen.svg)
+![Version](https://img.shields.io/badge/Версия-v1.0.8-brightgreen.svg)
 ![Go](https://img.shields.io/badge/Go-1.23%2B-00ADD8?logo=go&logoColor=white)
 ![Wails](https://img.shields.io/badge/Wails-v2-DF0000?logo=wails&logoColor=white)
 ![Sing-Box](https://img.shields.io/badge/Ядро-sing--box%201.14-FF6B00?logo=box&logoColor=white)
@@ -16,9 +16,23 @@
 
 **Простой, красивый и быстрый VPN-клиент для Windows с разделением трафика по приложениям (Split Tunneling), генератором и импортом WARP (AmneziaWG), каскадным туннелированием WARP Detour, гео-маршрутизацией списков IP/доменов, живым журналом логов ядра и защитой от сетевого шума.**
 
-[Скачать релиз v1.0.7 (.exe)](https://github.com/zalupacode228/vibe-vpn/releases/tag/v1.0.7) • [Что нового](#-новое-в-версии-107) • [Возможности](#-основные-возможности) • [Сборка из исходников](#-сборка-из-исходников)
+[Скачать релиз v1.0.8 (.exe)](https://github.com/zalupacode228/vibe-vpn/releases/tag/v1.0.8) • [Что нового](#-новое-в-версии-108) • [Возможности](#-основные-возможности) • [Сборка из исходников](#-сборка-из-исходников)
 
 </div>
+
+---
+
+## 🆕 Новое в версии 1.0.8
+
+- 🌐 **Стабильный сетевой стек TUN (`mixed` / gVisor)**:
+  - Сетевой стек виртуального адаптера Wintun переключен на отказоустойчивый `mixed` (встроенный стек Google gVisor).
+  - Устранена проблема со сбросом TCP-пакетов в Windows при повышенных привилегиях без фоновой службы `lxd` (DNS работал, но браузеры висели).
+  - Предотвращены ложные срабатывания Captive Portal в Firefox (`firefox-portal-detection.com`) и зацикливание маршрутов.
+- 🧹 **Полная изоляция кэша WebView2 в `%LOCALAPPDATA%`**:
+  - Каталог пользовательских данных движка WebView2 (`WebviewUserDataPath`) зафиксирован в `%LOCALAPPDATA%\VPN\webview2`.
+  - Приложение больше не создаёт папки с кэшем (`Crashpad`, `ShaderCache`, `Default`) рядом с файлом `.exe` при запуске из папки «Загрузки» или с Рабочего стола.
+- 🛡️ **Поддержка Hysteria 2 Salamander & TLS**:
+  - Добавлена полная поддержка обфускации Salamander, гибкая настройка ALPN и флага `insecure` для самоподписанных сертификатов.
 
 ---
 
@@ -139,7 +153,7 @@
 ## 🚀 Скачивание и запуск
 
 1. Перейдите на страницу [Релизов](https://github.com/zalupacode228/vibe-vpn/releases/latest).
-2. Скачайте свежий файл `VibeVPN-v1.0.7-Windows-x64.exe` (или `VPN.exe`).
+2. Скачайте свежий файл `VibeVPN-v1.0.8-Windows-x64.exe` (или `VPN.exe`).
 3. Запустите приложение.
    > **Примечание**: Требуется Windows 10 или 11 (64-бит). Для создания виртуального сетевого адаптера (`wintun.dll`) требуются права администратора.
 
