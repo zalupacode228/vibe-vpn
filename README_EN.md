@@ -40,78 +40,20 @@
 
 ## ✨ Key Features
 
-### ⚡ Per-Application Split Tunneling
-- Total control over which `.exe` applications route through VPN vs direct connection:
-  - **Whitelist**: Route *only* selected apps through the VPN (browsers, messengers, games).
-  - **Blacklist**: Route everything through VPN *except* selected apps.
-  - **Global**: Route all computer traffic through the VPN tunnel.
-  - **Direct (Bypass)**: All traffic goes straight without encryption.
-- Automatically lists running Windows processes with their real-time system icons.
-- Ability to pick and add any `.exe` application via the native Windows file dialog.
-
-### 🛡️ Cloudflare WARP & WARP Detour (Clean IP)
-- **WARP Detour (Clean IP)**: Route outbound proxy traffic through Cloudflare's residential network. International services (ChatGPT, Claude, Netflix) see a clean IP without datacenter blocks or captchas.
-- **Built-in Generator**:
-  - **AmneziaWG (AWG)**: Anti-censorship obfuscation using randomized junk packets (`Jc`, `Jmin`, `Jmax`, `S1`–`S4`, `H1`–`H4`) to defeat DPI filters.
-  - **MASQUE / HTTP/3**: Web traffic disguise over QUIC UDP port 443.
-  - One-click Cloudflare client key registration and peer negotiation.
-- **Config Import**:
-  - Load existing `.conf`, `.wireguard`, `.txt` config files via native file picker or clipboard with full AmneziaWG parameter parsing.
-
-### ⚡ Fastest Server Selection & Real Web Latency
-- **⚡ Best Node**: Automatically selects and switches to the lowest-latency server in one click from the dropdown or nodes panel.
-- **🌐 Real Web Latency Test (HTTP 204)**: Measures end-to-end data delivery across the active tunnel instead of superficial TCP handshakes.
-- **Protocol-Aware Ping**: Measures true TCP RTT for Reality/TLS and system ICMP Echo for UDP protocols (Hysteria 2 / WireGuard).
-
-### ⛔ Leak Protection & Backup Sync
-- **Kill Switch**: Blocks all internet traffic outside the tunnel in case of unexpected VPN disconnection.
-- **Background Subscription Auto-Update**: Silently updates subscription nodes every 24 hours and at startup.
-- **One-Click Profile Backup**: Export and import settings, subscriptions, nodes, and custom rules as a single `.json` file.
-
-### 📋 Connection Logs Viewer (Real-Time Core Logs)
-- Integrated sing-box live log viewer directly accessible from the dashboard.
-- **Smart Network Noise Filtering**: Automatically filters out malformed Windows DNS probes (NetBIOS, mDNS, NCSI network status checks) and high-frequency per-packet gaming traffic (CS2, etc.) — displaying only real connection events and actual errors.
-- Filter pill toggles: *All*, *Errors*, *Warnings*.
-- Auto-scroll, one-click copy to clipboard, and instant log clearing.
-
-### 🌐 Smart Routing & Geo-Rules (Domains & IP/CIDR Subnets)
-- **Bypass RU**: Automatically routes Russian domestic services (banks, government portals, social networks, domestic streaming) directly without VPN for maximum throughput.
-- **IP & CIDR Subnet Support**: Add custom lists of IP addresses and CIDR subnets (e.g. Russian IP blocks like `178.249.0.0/16` or blocked ranges) with configurable action: **Proxy (In Tunnel)** or **Direct (Bypass)**.
-- **Flexible List Sources**:
-  - Online via direct URL / GitHub Raw `.txt` or `.list`.
-  - Offline via local PC files using the **Browse...** button.
-- **AdBlock**: DNS-level ad, tracker, and telemetry blocking.
-
-### 📷 Universal QR-Code Importer
-- **From Screen**: Instant screen capture with automatic QR code scanning.
-- **From Clipboard (`Ctrl+V`)**: Instant detection of copied QR screenshot images or raw config text.
-- **From File**: Drag-and-drop or file picker for PNG, JPG, WebP.
-- **Live Webcam Feed**: Scan QR codes directly with your camera.
-- Automatically recognizes single nodes, bulk node lists, and subscription links.
-
-### 🚀 Modern Protocol Support
-- VLESS (Reality, TLS, WebSocket, gRPC, **XHTTP / SplitHTTP, Post-Quantum ML-KEM-768 encryption**)
-- VMess
-- Shadowsocks (2022)
-- Trojan
-- Hysteria 2 / Hy2
-- TUIC v5
-- WireGuard & AmneziaWG (AWG)
-
-### 📊 Telemetry, Subscriptions & Monitoring
-- **Hybrid Subscription Widget**: Summary status strip on the main dashboard and detailed card on the Servers tab (supports quota limits, unlimited tiers, and expiration dates).
-- **Active Node Auto-Pinning**: The currently connected server is always automatically pinned to the top of the node list.
-- Real-time 60 FPS bandwidth speed graph (Download / Upload).
-- High-precision ping latency test with visual color indicators (green / yellow / red).
-- Interactive **Connection Tree** grouped by active Windows process names, displaying exact destination IPs, routing rules, and bandwidth per app.
-
-### ⚙️ Customization & Privacy
-- **Custom User-Agent & HWID**: Tailor client identification and hardware ID when updating subscriptions to ensure maximum server compatibility.
-- **Privacy Blur Mode**: One-click blur of IP addresses, server domains, and private keys for safe livestreaming and screenshots.
-
-### 🎨 Design & Ergonomics
-- Polished Material 3 Dark theme (strict 16px grid rhythm, balanced typography contrast, clean visual accents).
-- Minimization to system tray with quick-actions menu.
+- **Split Tunneling** — whitelist / blacklist apps, global and direct modes.
+- **WARP Detour (Clean IP)** — chain traffic through Cloudflare WARP on top of any proxy. ChatGPT, Claude, Netflix without captchas or datacenter blocks.
+- **WARP Generator** — AmneziaWG (anti-DPI) and MASQUE/HTTP3 in one click; `.conf` file import.
+- **Fastest Node** — auto-select the lowest-latency server.
+- **Kill Switch** — block all traffic on unexpected tunnel drop.
+- **Bypass RU** — route Russian services (banks, government, VK) directly, bypassing VPN.
+- **AdBlock** — DNS-level ad and tracker blocking.
+- **QR Import** — from screen, clipboard, file, or webcam; single nodes and subscriptions.
+- **Core Logs** — real-time sing-box log viewer with Windows noise filtering.
+- **Protocols** — VLESS (Reality, XHTTP, ML-KEM-768), VMess, Shadowsocks 2022, Trojan, Hysteria 2, TUIC v5, WireGuard, AmneziaWG.
+- **Telemetry** — 60 fps speed graph, per-process connection tree, subscription widget with quotas.
+- **Profile Backup** — export/import all settings to `.json`.
+- **Privacy Blur** — hide IPs, domains, and keys for streaming and screenshots.
+- **Material 3 Dark UI** — clean design, system tray with quick actions.
 
 ---
 
