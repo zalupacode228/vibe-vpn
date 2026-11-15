@@ -1,7 +1,9 @@
 package subs
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -154,7 +156,8 @@ func ParseNodeLink(raw string) *models.Node {
 		port = 443
 	}
 
-	id := fmt.Sprintf("%s_%s_%d", scheme, u.Hostname(), port)
+	h := sha256.Sum256([]byte(raw))
+	id := fmt.Sprintf("%s_%s_%d_%s", scheme, u.Hostname(), port, hex.EncodeToString(h[:4]))
 
 	node := &models.Node{
 		ID:       id,

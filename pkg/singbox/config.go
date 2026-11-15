@@ -3,9 +3,12 @@ package singbox
 import (
 	"encoding/json"
 	"net"
+	"net/url"
 	"strings"
 	"vibe-go/pkg/models"
 )
+
+const ClashSecret = "vibe_internal_clash_secret_9090"
 
 var bypassRUDomains = []string{
 	".ru", ".su", ".xn--p1ai", ".рф",
@@ -590,12 +593,36 @@ func (b *ConfigBuilder) GenerateConfig(
 		"server": "8.8.8.8",
 		"path":   "/dns-query",
 	}
+	if settings.RemoteDNS != "" {
+		if strings.HasPrefix(settings.RemoteDNS, "https://") {
+			if u, err := url.Parse(settings.RemoteDNS); err == nil {
+				path := u.Path
+				if path == "" {
+					path = "/dns-query"
+				}
+				remoteDNSServer["server"] = u.Host
+				remoteDNSServer["path"] = path
+				remoteDNSServer["type"] = "https"
+			}
+		} else if strings.HasPrefix(settings.RemoteDNS, "udp://") {
+			remoteDNSServer["server"] = strings.TrimPrefix(settings.RemoteDNS, "udp://")
+			remoteDNSServer["type"] = "udp"
+			delete(remoteDNSServer, "path")
+		} else {
+			remoteDNSServer["server"] = settings.RemoteDNS
+			remoteDNSServer["type"] = "udp"
+			delete(remoteDNSServer, "path")
+		}
+	}
 	if isWireguard || isMasque {
 		remoteDNSServer = map[string]interface{}{
 			"tag":    "remote-dns",
 			"type":   "udp",
 			"server": "1.1.1.1",
 			"detour": "proxy-out",
+		}
+		if settings.RemoteDNS != "" && !strings.HasPrefix(settings.RemoteDNS, "https://") {
+			remoteDNSServer["server"] = strings.TrimPrefix(settings.RemoteDNS, "udp://")
 		}
 	} else if proxyOut != nil {
 		remoteDNSServer["detour"] = targetOutbound
@@ -677,7 +704,7 @@ func (b *ConfigBuilder) GenerateConfig(
 			"clash_api": map[string]interface{}{
 				"external_controller": "127.0.0.1:9090",
 				"external_ui":         "",
-				"secret":              "",
+				"secret":              ClashSecret,
 				"default_mode":        "rule",
 			},
 		},

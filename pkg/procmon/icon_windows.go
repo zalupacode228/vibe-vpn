@@ -168,13 +168,22 @@ func extractIcon(exePath string) string {
 	}()
 
 	var bm BITMAP
-	r, _, _ = procGetObjectW.Call(iconInfo.HbmColor, uintptr(unsafe.Sizeof(bm)), uintptr(unsafe.Pointer(&bm)))
+	hbm := iconInfo.HbmColor
+	isMono := false
+	if hbm == 0 {
+		hbm = iconInfo.HbmMask
+		isMono = true
+	}
+	r, _, _ = procGetObjectW.Call(hbm, uintptr(unsafe.Sizeof(bm)), uintptr(unsafe.Pointer(&bm)))
 	if r == 0 {
 		return ""
 	}
 
 	width := int(bm.BmWidth)
 	height := int(bm.BmHeight)
+	if isMono {
+		height = height / 2
+	}
 	if width <= 0 || height <= 0 || width > 256 || height > 256 {
 		return ""
 	}

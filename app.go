@@ -635,6 +635,7 @@ func (a *App) RestartAsAdmin() error {
 		1, // SW_SHOWNORMAL
 	)
 	if ret <= 32 {
+		checkSingleInstanceMutex()
 		return fmt.Errorf("повышение прав отменено или ошибка (код %d)", ret)
 	}
 
@@ -788,10 +789,18 @@ func (a *App) AddCustomList(name string, urlStr string, action string) (*models.
 		if err != nil {
 			return nil, fmt.Errorf("ошибка чтения ответа: %w", err)
 		}
-	} else if data, err := os.ReadFile(urlStr); err == nil {
-		bodyBytes = data
 	} else {
-		return nil, fmt.Errorf("укажите корректный URL (https://...) или локальный путь к файлу")
+		cleanPath := filepath.Clean(urlStr)
+		fi, err := os.Stat(cleanPath)
+		if err != nil || fi.IsDir() {
+			return nil, fmt.Errorf("укажите корректный URL (https://...) или локальный путь к текстовому файлу")
+		}
+		data, err := os.ReadFile(cleanPath)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка чтения файла: %w", err)
+		}
+		bodyBytes = data
+		urlStr = cleanPath
 	}
 
 	lines := strings.Split(string(bodyBytes), "\n")
@@ -861,10 +870,17 @@ func (a *App) RefreshAllCustomLists() (int, error) {
 				continue
 			}
 			bodyBytes = data
-		} else if data, err := os.ReadFile(lists[i].URL); err == nil {
-			bodyBytes = data
 		} else {
-			continue
+			cleanPath := filepath.Clean(lists[i].URL)
+			fi, err := os.Stat(cleanPath)
+			if err != nil || fi.IsDir() {
+				continue
+			}
+			data, err := os.ReadFile(cleanPath)
+			if err != nil {
+				continue
+			}
+			bodyBytes = data
 		}
 
 		lines := strings.Split(string(bodyBytes), "\n")
@@ -1520,7 +1536,15 @@ func (a *App) ImportProfile() (string, error) {
 }
 
 func (a *App) startSubscriptionAutoUpdater() {
-	time.Sleep(15 * time.Second)
+	if a.ctx != nil {
+		select {
+		case <-time.After(15 * time.Second):
+		case <-a.ctx.Done():
+			return
+		}
+	} else {
+		time.Sleep(15 * time.Second)
+	}
 
 	settings := a.storage.LoadSettings()
 	if settings.AutoUpdateSubs {
@@ -1537,7 +1561,17 @@ func (a *App) startSubscriptionAutoUpdater() {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
-	for range ticker.C {
+	for {
+		if a.ctx != nil {
+			select {
+			case <-a.ctx.Done():
+				return
+			case <-ticker.C:
+			}
+		} else {
+			<-ticker.C
+		}
+
 		curSettings := a.storage.LoadSettings()
 		if curSettings.AutoUpdateSubs {
 			_, _ = a.RefreshAllSubscriptions()

@@ -23,7 +23,10 @@ func NewStorage() *Storage {
 	if appData == "" {
 		appData = "."
 	}
-	dir := filepath.Join(appData, "VPN")
+	return NewStorageWithDir(filepath.Join(appData, "VPN"))
+}
+
+func NewStorageWithDir(dir string) *Storage {
 	_ = os.MkdirAll(dir, 0755)
 
 	return &Storage{

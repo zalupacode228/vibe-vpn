@@ -67,9 +67,9 @@ func generateAWG() (*models.Node, error) {
 			lastErr = err
 			continue
 		}
-		defer resp.Body.Close()
 
 		data, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
 		if err != nil {
 			lastErr = err
 			continue

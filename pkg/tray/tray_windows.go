@@ -27,6 +27,8 @@ var (
 	procTrackPopupMenu   = moduser32.NewProc("TrackPopupMenu")
 	procDestroyMenu      = moduser32.NewProc("DestroyMenu")
 	procLoadIconW        = moduser32.NewProc("LoadIconW")
+	procPostMessageW     = moduser32.NewProc("PostMessageW")
+	procDestroyIcon      = moduser32.NewProc("DestroyIcon")
 
 	procShell_NotifyIconW = modshell32.NewProc("Shell_NotifyIconW")
 	procExtractIconW      = modshell32.NewProc("ExtractIconW")
@@ -40,6 +42,7 @@ const (
 	WM_LBUTTONUP     = 0x0202
 	WM_LBUTTONDBLCLK = 0x0203
 	WM_RBUTTONUP     = 0x0205
+	WM_CLOSE         = 0x0010
 	WM_DESTROY       = 0x0002
 
 	NIM_ADD    = 0x00000000
@@ -106,8 +109,9 @@ type MSG struct {
 }
 
 type Tray struct {
-	hWnd uintptr
-	nid  NOTIFYICONDATAW
+	hWnd  uintptr
+	hIcon uintptr
+	nid   NOTIFYICONDATAW
 }
 
 var (
@@ -151,6 +155,9 @@ func wndProc(hWnd uintptr, msg uint32, wParam uintptr, lParam uintptr) uintptr {
 				onExitCallback()
 			}
 		}
+		return 0
+	case WM_CLOSE:
+		procDestroyWindow.Call(hWnd)
 		return 0
 	case WM_DESTROY:
 		procPostQuitMessage.Call(0)
@@ -206,6 +213,8 @@ func InitTray(tooltip string, onShow func(), onExit func()) (*Tray, error) {
 		}
 		if hIcon == 0 {
 			hIcon, _, _ = procLoadIconW.Call(0, 32512) // IDI_APPLICATION
+		} else {
+			t.hIcon = hIcon
 		}
 
 		t.nid = NOTIFYICONDATAW{
@@ -240,7 +249,11 @@ func InitTray(tooltip string, onShow func(), onExit func()) (*Tray, error) {
 func (t *Tray) Close() {
 	if t.hWnd != 0 {
 		procShell_NotifyIconW.Call(NIM_DELETE, uintptr(unsafe.Pointer(&t.nid)))
-		procDestroyWindow.Call(t.hWnd)
+		procPostMessageW.Call(t.hWnd, WM_CLOSE, 0, 0)
 		t.hWnd = 0
+	}
+	if t.hIcon != 0 {
+		procDestroyIcon.Call(t.hIcon)
+		t.hIcon = 0
 	}
 }

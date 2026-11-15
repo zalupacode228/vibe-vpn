@@ -211,7 +211,12 @@ func (c *Controller) pollTraffic(stop chan struct{}) {
 		case <-stop:
 			return
 		case <-ticker.C:
-			resp, err := client.Get("http://127.0.0.1:9090/traffic")
+			req, err := http.NewRequest("GET", "http://127.0.0.1:9090/traffic", nil)
+			if err != nil {
+				continue
+			}
+			req.Header.Set("Authorization", "Bearer "+ClashSecret)
+			resp, err := client.Do(req)
 			if err != nil {
 				continue
 			}
@@ -251,7 +256,12 @@ func formatBytesPretty(b int64) string {
 
 func (c *Controller) GetConnections() ([]models.ConnectionGroup, error) {
 	client := &http.Client{Timeout: 2 * time.Second}
-	resp, err := client.Get("http://127.0.0.1:9090/connections")
+	req, err := http.NewRequest("GET", "http://127.0.0.1:9090/connections", nil)
+	if err != nil {
+		return []models.ConnectionGroup{}, err
+	}
+	req.Header.Set("Authorization", "Bearer "+ClashSecret)
+	resp, err := client.Do(req)
 	if err != nil {
 		return []models.ConnectionGroup{}, err
 	}
@@ -377,7 +387,12 @@ func (c *Controller) GetLogs(maxLines int) string {
 func (c *Controller) ClearLogs() error {
 	cfgDir := filepath.Dir(c.configPath)
 	logPath := filepath.Join(cfgDir, "core.log")
-	return os.WriteFile(logPath, []byte(""), 0644)
+	f, err := os.OpenFile(logPath, os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return nil
+	}
+	f.Close()
+	return nil
 }
 
 var ansiRegex = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])|\x1b0?\[[0-9;]*[a-zA-Z]?`)
@@ -419,8 +434,26 @@ func readLastLines(filePath string, n int) string {
 	}
 	defer f.Close()
 
+	stat, err := f.Stat()
+	if err != nil {
+		return ""
+	}
+
+	var scanner *bufio.Scanner
+	const maxReadBytes = 256 * 1024
+	if stat.Size() > maxReadBytes {
+		if _, err := f.Seek(stat.Size()-maxReadBytes, io.SeekStart); err == nil {
+			r := bufio.NewReader(f)
+			_, _ = r.ReadString('\n')
+			scanner = bufio.NewScanner(r)
+		} else {
+			scanner = bufio.NewScanner(f)
+		}
+	} else {
+		scanner = bufio.NewScanner(f)
+	}
+
 	var lines []string
-	scanner := bufio.NewScanner(f)
 	buf := make([]byte, 64*1024)
 	scanner.Buffer(buf, 1024*1024)
 	for scanner.Scan() {

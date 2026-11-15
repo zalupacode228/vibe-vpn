@@ -5,7 +5,7 @@ import (
 )
 
 func TestStorageLoad(t *testing.T) {
-	s := NewStorage()
+	s := NewStorageWithDir(t.TempDir())
 
 	settings := s.LoadSettings()
 	if settings.SplitMode == "" {
@@ -23,7 +23,7 @@ func TestStorageLoad(t *testing.T) {
 }
 
 func TestStorageSaveLoadWarpDetour(t *testing.T) {
-	s := NewStorage()
+	s := NewStorageWithDir(t.TempDir())
 	initial := s.LoadSettings()
 
 	// Toggle to opposite

@@ -108,7 +108,11 @@ func main() {
 	}
 
 	if !isAdmin() && !noElevate {
+		releaseSingleInstanceMutex()
 		if elevateProcess() {
+			os.Exit(0)
+		}
+		if !checkSingleInstanceMutex() {
 			os.Exit(0)
 		}
 	}
