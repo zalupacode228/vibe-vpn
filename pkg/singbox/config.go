@@ -628,20 +628,33 @@ func (b *ConfigBuilder) GenerateConfig(
 		remoteDNSServer["detour"] = targetOutbound
 	}
 
-	directDNS := "1.1.1.1"
-	if settings.DirectDNS != "" {
-		directDNS = settings.DirectDNS
-	} else if settings.BypassRU {
-		directDNS = "77.88.8.8"
+	var directDNSServer map[string]interface{}
+	dDNS := strings.TrimSpace(settings.DirectDNS)
+	if dDNS == "" || strings.EqualFold(dDNS, "local") {
+		if settings.BypassRU {
+			directDNSServer = map[string]interface{}{
+				"tag":    "direct-dns",
+				"type":   "udp",
+				"server": "77.88.8.8",
+			}
+		} else {
+			directDNSServer = map[string]interface{}{
+				"tag":  "direct-dns",
+				"type": "local",
+			}
+		}
+	} else {
+		dDNS = strings.TrimPrefix(dDNS, "udp://")
+		directDNSServer = map[string]interface{}{
+			"tag":    "direct-dns",
+			"type":   "udp",
+			"server": dDNS,
+		}
 	}
 
 	dnsServers := []map[string]interface{}{
 		remoteDNSServer,
-		{
-			"tag":    "direct-dns",
-			"type":   "udp",
-			"server": directDNS,
-		},
+		directDNSServer,
 		{
 			"tag":  "local-dns",
 			"type": "local",
