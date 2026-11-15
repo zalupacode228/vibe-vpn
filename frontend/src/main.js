@@ -3354,4 +3354,20 @@ btnConfirmUpdate?.addEventListener('click', async () => {
   }
 });
 
+EventsOn('update:progress', (data) => {
+  if (!data) return;
+  const percent = Math.min(100, Math.max(0, Number(data.percent) || 0));
+  if (updateProgressPercent) {
+    updateProgressPercent.innerText = `${percent}%`;
+  }
+  if (updateProgressBar) {
+    updateProgressBar.style.width = `${percent}%`;
+  }
+  if (updateProgressLabel && data.downloaded && data.total) {
+    const dlMB = (data.downloaded / (1024 * 1024)).toFixed(1);
+    const totMB = (data.total / (1024 * 1024)).toFixed(1);
+    updateProgressLabel.innerText = `${t('update_downloading')} (${dlMB} / ${totMB} MB)`;
+  }
+});
+
 window.addEventListener('DOMContentLoaded', initApp);
