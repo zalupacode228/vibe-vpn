@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -118,6 +120,18 @@ func main() {
 	}
 
 	app := NewApp()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		if app.ctx != nil {
+			runtime.Quit(app.ctx)
+		} else {
+			app.shutdown(context.Background())
+			os.Exit(0)
+		}
+	}()
 
 	wvDataPath := filepath.Join(os.Getenv("LOCALAPPDATA"), "VPN", "webview2")
 	if os.Getenv("LOCALAPPDATA") == "" {

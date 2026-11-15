@@ -2358,36 +2358,47 @@ async function loadConnections() {
 
     // Remember currently open processes so dynamic update doesn't collapse them
     const openProcs = new Set(Array.from(container.querySelectorAll('.conn-group.open .conn-proc-title')).map(el => el.innerText.trim()));
+    const savedScrollTop = container.scrollTop;
 
     container.innerHTML = '';
     groups.forEach(g => {
       const groupEl = document.createElement('div');
-      const isOpen = openProcs.has(g.process.trim());
+      const procName = (g.process || 'System').trim();
+      const isOpen = openProcs.has(procName);
       groupEl.className = `conn-group ${isOpen ? 'open' : ''}`;
+
+      const safeProc = escapeHtml(procName);
+      const safeDown = escapeHtml(g.down_speed || '0 B');
+      const safeUp = escapeHtml(g.up_speed || '0 B');
 
       groupEl.innerHTML = `
         <div class="conn-group-header">
           <div class="conn-group-left">
-            <span class="conn-proc-title">${g.process}</span>
-            <span class="conn-count-badge tabular">${g.count}</span>
+            <span class="conn-proc-title">${safeProc}</span>
+            <span class="conn-count-badge tabular">${Number(g.count) || 0}</span>
           </div>
           <div class="conn-group-right tabular">
-            <span style="color: var(--success); margin-right: 12px;">↓ ${g.down_speed || '0 B'}</span>
-            <span style="color: var(--accent-purple); margin-right: 8px;">↑ ${g.up_speed || '0 B'}</span>
+            <span style="color: var(--success); margin-right: 12px;">↓ ${safeDown}</span>
+            <span style="color: var(--accent-purple); margin-right: 8px;">↑ ${safeUp}</span>
             <svg class="conn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
           </div>
         </div>
         <div class="conn-children">
-          ${g.children.map(c => `
+          ${(g.children || []).map(c => {
+            const safeDest = escapeHtml(c.destination);
+            const safeRule = escapeHtml(c.rule || 'proxy');
+            const safeCDown = escapeHtml(c.down_speed || '0 B');
+            const safeCUp = escapeHtml(c.up_speed || '0 B');
+            return `
             <div class="conn-row">
-              <span class="conn-dest" title="${c.destination}">${c.destination}</span>
-              <span class="conn-rule">${c.rule || 'proxy'}</span>
+              <span class="conn-dest" title="${safeDest}">${safeDest}</span>
+              <span class="conn-rule">${safeRule}</span>
               <div class="tabular" style="font-size: 11px;">
-                <span style="color: var(--success); margin-right: 8px;">↓ ${c.down_speed}</span>
-                <span style="color: var(--accent-purple);">↑ ${c.up_speed}</span>
+                <span style="color: var(--success); margin-right: 8px;">↓ ${safeCDown}</span>
+                <span style="color: var(--accent-purple);">↑ ${safeCUp}</span>
               </div>
-            </div>
-          `).join('')}
+            </div>`;
+          }).join('')}
         </div>
       `;
 
@@ -2397,6 +2408,8 @@ async function loadConnections() {
 
       container.appendChild(groupEl);
     });
+
+    container.scrollTop = savedScrollTop;
   } catch (err) {
     container.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--error);">Ошибка получения соединений: ${err}</div>`;
   } finally {
@@ -3070,6 +3083,18 @@ async function initApp() {
 
     pollTelemetry();
     state.pollTimer = setInterval(pollTelemetry, 1000);
+
+    EventsOn('subscriptions-updated', async () => {
+      try {
+        state.subscriptions = (await GetSubscriptions()) || [];
+        state.nodes = (await GetNodes()) || [];
+        renderNodeCategoryTabs();
+        renderNodesList();
+        updateHeroNodeDisplay();
+      } catch (e) {
+        console.warn('Subscriptions update event error:', e);
+      }
+    });
 
     // Background check for application updates on startup
     setTimeout(async () => {
