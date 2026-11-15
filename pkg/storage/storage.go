@@ -137,7 +137,7 @@ func (s *Storage) SaveSettings(settings models.Settings) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(s.settingsPath, data, 0644)
+	return atomicWriteFile(s.settingsPath, data, 0644)
 }
 
 func (s *Storage) LoadNodes() []models.Node {
@@ -171,8 +171,8 @@ func (s *Storage) SaveNodes(nodes []models.Node) error {
 	if err != nil {
 		return err
 	}
-	_ = os.WriteFile(filepath.Join(s.appDir, "user_nodes.json"), data, 0644)
-	return os.WriteFile(s.nodesPath, data, 0644)
+	_ = atomicWriteFile(filepath.Join(s.appDir, "user_nodes.json"), data, 0644)
+	return atomicWriteFile(s.nodesPath, data, 0644)
 }
 
 func (s *Storage) LoadSubscriptions() []models.Subscription {
@@ -203,7 +203,7 @@ func (s *Storage) SaveSubscriptions(subs []models.Subscription) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(s.subsPath, data, 0644)
+	return atomicWriteFile(s.subsPath, data, 0644)
 }
 
 func (s *Storage) LoadRules() []models.AppRule {
@@ -235,7 +235,7 @@ func (s *Storage) SaveRules(rules []models.AppRule) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(s.rulesPath, data, 0644)
+	return atomicWriteFile(s.rulesPath, data, 0644)
 }
 
 func (s *Storage) LoadCustomLists() []models.CustomList {
@@ -285,7 +285,7 @@ func (s *Storage) SaveCustomLists(lists []models.CustomList) error {
 				"ips":     l.IPs,
 			}
 			cBytes, _ := json.Marshal(cached)
-			_ = os.WriteFile(filepath.Join(dataDir, l.ID+".json"), cBytes, 0644)
+			_ = atomicWriteFile(filepath.Join(dataDir, l.ID+".json"), cBytes, 0644)
 		}
 	}
 
@@ -293,5 +293,33 @@ func (s *Storage) SaveCustomLists(lists []models.CustomList) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(s.listsPath, data, 0644)
+	return atomicWriteFile(s.listsPath, data, 0644)
+}
+
+func atomicWriteFile(filename string, data []byte, perm os.FileMode) error {
+	dir := filepath.Dir(filename)
+	_ = os.MkdirAll(dir, 0755)
+
+	tmpFile, err := os.CreateTemp(dir, "save_*.tmp")
+	if err != nil {
+		return os.WriteFile(filename, data, perm)
+	}
+	tmpName := tmpFile.Name()
+	defer func() {
+		_ = os.Remove(tmpName)
+	}()
+
+	if _, err := tmpFile.Write(data); err != nil {
+		_ = tmpFile.Close()
+		return err
+	}
+	if err := tmpFile.Sync(); err != nil {
+		_ = tmpFile.Close()
+		return err
+	}
+	if err := tmpFile.Close(); err != nil {
+		return err
+	}
+
+	return os.Rename(tmpName, filename)
 }

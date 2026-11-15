@@ -601,12 +601,19 @@ func (b *ConfigBuilder) GenerateConfig(
 		remoteDNSServer["detour"] = targetOutbound
 	}
 
+	directDNS := "1.1.1.1"
+	if settings.DirectDNS != "" {
+		directDNS = settings.DirectDNS
+	} else if settings.BypassRU {
+		directDNS = "77.88.8.8"
+	}
+
 	dnsServers := []map[string]interface{}{
 		remoteDNSServer,
 		{
 			"tag":    "direct-dns",
 			"type":   "udp",
-			"server": "77.88.8.8",
+			"server": directDNS,
 		},
 		{
 			"tag":  "local-dns",
@@ -651,7 +658,7 @@ func (b *ConfigBuilder) GenerateConfig(
 				"type":                     "tun",
 				"tag":                      "tun-in",
 				"interface_name":           "vpn-tun",
-				"address":                  []string{"172.19.0.1/30"},
+				"address":                  []string{"172.19.0.1/30", "fdfe:dcba:9876::1/126"},
 				"mtu":                      tunMTU,
 				"auto_route":               true,
 				"strict_route":             settings.StrictRoute || settings.KillSwitch,

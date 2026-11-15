@@ -168,6 +168,9 @@ func ParseNodeLink(raw string) *models.Node {
 
 	switch scheme {
 	case "vless":
+		if u.User == nil {
+			return nil
+		}
 		node.UUID = u.User.Username()
 		node.Flow = q.Get("flow")
 		node.Security = q.Get("security")

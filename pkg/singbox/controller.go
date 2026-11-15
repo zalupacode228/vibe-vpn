@@ -104,20 +104,41 @@ func (c *Controller) Start(configBytes []byte) error {
 		return fmt.Errorf("failed to start sing-box: %w", err)
 	}
 
+	// Monitor process exit via channel
+	exitChan := make(chan error, 1)
+	go func() {
+		exitChan <- cmd.Wait()
+	}()
+
 	// Verification: wait 500ms to ensure process didn't exit immediately on error
-	time.Sleep(500 * time.Millisecond)
-	if cmd.ProcessState != nil && cmd.ProcessState.Exited() {
+	select {
+	case waitErr := <-exitChan:
 		if logFile != nil {
 			logFile.Close()
 		}
 		errText := readLastLines(logPath, 15)
-		return fmt.Errorf("sing-box crashed on startup: %s", errText)
+		return fmt.Errorf("sing-box crashed on startup (exit %v): %s", waitErr, errText)
+	case <-time.After(500 * time.Millisecond):
+		// Process is still running successfully
 	}
 
 	c.cmd = cmd
 	c.logFile = logFile
 	c.isRunning = true
 	c.status = "Подключено"
+
+	// Watch for unexpected process termination during runtime
+	go func() {
+		<-exitChan
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		if c.isRunning && c.cmd == cmd {
+			c.isRunning = false
+			c.status = "Отключено"
+			c.downSpeed = 0
+			c.upSpeed = 0
+		}
+	}()
 
 	c.stopTraffic = make(chan struct{})
 	go c.pollTraffic(c.stopTraffic)
@@ -137,8 +158,19 @@ func (c *Controller) stopInternal() error {
 		c.stopTraffic = nil
 	}
 	if c.cmd != nil && c.cmd.Process != nil {
-		_ = c.cmd.Process.Kill()
-		_ = c.cmd.Wait()
+		// Attempt graceful interrupt first so Wintun unhooks cleanly
+		_ = c.cmd.Process.Signal(os.Interrupt)
+		done := make(chan struct{})
+		go func() {
+			_ = c.cmd.Wait()
+			close(done)
+		}()
+		select {
+		case <-done:
+		case <-time.After(1500 * time.Millisecond):
+			_ = c.cmd.Process.Kill()
+			<-done
+		}
 		c.cmd = nil
 	}
 	if c.logFile != nil {

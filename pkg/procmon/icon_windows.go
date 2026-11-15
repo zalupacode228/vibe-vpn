@@ -90,6 +90,15 @@ func GetAppIcon(exePath string) string {
 	iconB64 := extractIcon(exePath)
 
 	iconCacheMu.Lock()
+	if len(iconCache) > 300 {
+		// Prune cache to prevent unbounded memory growth
+		for k := range iconCache {
+			delete(iconCache, k)
+			if len(iconCache) <= 150 {
+				break
+			}
+		}
+	}
 	iconCache[exePath] = iconB64
 	iconCacheMu.Unlock()
 

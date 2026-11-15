@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -43,6 +44,7 @@ type App struct {
 	tray         *tray.Tray
 	activeNodeID string
 	mu           sync.RWMutex
+	vpnMu        sync.Mutex
 }
 
 func NewApp() *App {
@@ -929,6 +931,9 @@ func (a *App) DeleteCustomList(id string) error {
 
 // VPN Connection Control
 func (a *App) ToggleVPN(enabled bool) (bool, string, error) {
+	a.vpnMu.Lock()
+	defer a.vpnMu.Unlock()
+
 	if !enabled {
 		if err := a.controller.Stop(); err != nil {
 			return false, err.Error(), err
@@ -1146,6 +1151,16 @@ func (a *App) DownloadAndApplyUpdate(downloadURL string) error {
 		return fmt.Errorf("ссылка для скачивания пуста")
 	}
 
+	// Validate update source URL
+	parsedURL, err := url.Parse(downloadURL)
+	if err != nil {
+		return fmt.Errorf("некорректная ссылка: %w", err)
+	}
+	host := strings.ToLower(parsedURL.Hostname())
+	if host != "github.com" && !strings.HasSuffix(host, ".github.com") && !strings.HasSuffix(host, "githubusercontent.com") {
+		return fmt.Errorf("неразрешенный источник обновления: %s", host)
+	}
+
 	curExe, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("не удалось определить путь к приложению: %w", err)
@@ -1222,6 +1237,24 @@ func (a *App) DownloadAndApplyUpdate(downloadURL string) error {
 		}
 	}
 	out.Close()
+
+	if downloaded < 5*1024*1024 {
+		os.Remove(tempExe)
+		return fmt.Errorf("скачанный файл поврежден или слишком мал (%d байт)", downloaded)
+	}
+
+	header := make([]byte, 2)
+	checkF, err := os.Open(tempExe)
+	if err != nil {
+		os.Remove(tempExe)
+		return fmt.Errorf("ошибка проверки файла: %w", err)
+	}
+	_, _ = io.ReadFull(checkF, header)
+	checkF.Close()
+	if string(header) != "MZ" {
+		os.Remove(tempExe)
+		return fmt.Errorf("скачанный файл не является валидным исполняемым файлом Windows")
+	}
 
 	if a.ctx != nil {
 		runtime.EventsEmit(a.ctx, "update:progress", map[string]interface{}{

@@ -87,6 +87,16 @@ let state = {
 };
 
 // Utilities
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function formatSpeed(bytesPerSec) {
   if (!bytesPerSec || bytesPerSec <= 0) return '0.0 KB/s';
   if (bytesPerSec < 1024 * 1024) {
@@ -651,7 +661,7 @@ function renderNodePickerDropdown() {
   });
 
   orderedGroupNames.forEach(gName => {
-    html += `<div class="node-picker-group-title">── ${gName} ──</div>`;
+    html += `<div class="node-picker-group-title">── ${escapeHtml(gName)} ──</div>`;
     const sortedGroupNodes = [...groups[gName]].sort((a, b) => {
       if (a.id === curId) return -1;
       if (b.id === curId) return 1;
@@ -669,8 +679,8 @@ function renderNodePickerDropdown() {
         <div class="node-picker-item ${isActive ? 'active' : ''}" data-id="${n.id}">
           <div class="node-picker-item-left">
             <span class="node-flag-badge" title="Страна: ${cc}">${flagSvg}</span>
-            <span class="node-picker-name">${displayName}</span>
-            <span class="node-picker-proto">[${protoLabel}]</span>
+            <span class="node-picker-name">${escapeHtml(displayName)}</span>
+            <span class="node-picker-proto">[${escapeHtml(protoLabel)}]</span>
           </div>
           <div class="node-picker-item-right tabular">
             <span class="node-picker-ping">${pingText}</span>
@@ -1781,11 +1791,11 @@ function renderNodesList() {
         </div>
         <div class="node-flag-badge" title="${t('country_prefix', 'Страна')}: ${cc}">${flagSvg}</div>
         <div class="node-details">
-          <div class="node-name privacy-target ${isBlurred ? 'privacy-blurred' : ''}">${displayName}</div>
+          <div class="node-name privacy-target ${isBlurred ? 'privacy-blurred' : ''}">${escapeHtml(displayName)}</div>
           <div class="node-subtext">
-            <span class="badge-protocol ${isWarp ? 'warp' : ''}" title="${protoLabel}">${shortBadge}</span>
-            <span class="node-server-ip tabular privacy-target ${isBlurred ? 'privacy-blurred' : ''}">${node.server}:${node.port}</span>
-            ${node.subscription_name ? `<span class="node-sub-name privacy-target ${isBlurred ? 'privacy-blurred' : ''}">• ${node.subscription_name}</span>` : ''}
+            <span class="badge-protocol ${isWarp ? 'warp' : ''}" title="${escapeHtml(protoLabel)}">${shortBadge}</span>
+            <span class="node-server-ip tabular privacy-target ${isBlurred ? 'privacy-blurred' : ''}">${escapeHtml(node.server)}:${node.port}</span>
+            ${node.subscription_name ? `<span class="node-sub-name privacy-target ${isBlurred ? 'privacy-blurred' : ''}">• ${escapeHtml(node.subscription_name)}</span>` : ''}
           </div>
         </div>
       </div>
@@ -1998,16 +2008,6 @@ const filterBtns = document.querySelectorAll('.logs-filter-pill');
 let currentLogFilter = 'all';
 let rawLogData = '';
 let logPollTimer = null;
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
 
 function stripAnsi(str) {
   if (!str) return '';
@@ -2278,10 +2278,10 @@ async function loadSubsList() {
       row.innerHTML = `
         <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px;">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-weight: 600; color: #f0ecf6; font-size: 13px;">${s.name}</span>
+            <span style="font-weight: 600; color: #f0ecf6; font-size: 13px;">${escapeHtml(s.name)}</span>
             <span class="badge-nodes">${s.count} ${getNodesWord(s.count)}</span>
           </div>
-          <div style="font-size: 11px; color: #8e8a99; font-family: monospace; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${s.url}</div>
+          <div style="font-size: 11px; color: #8e8a99; font-family: monospace; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${escapeHtml(s.url)}</div>
         </div>
         <div style="display: flex; gap: 6px; align-items: center; margin-left: 10px;">
           <button class="sub-action-btn btn-refresh-sub" title="Обновить подписку">
