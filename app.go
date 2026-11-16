@@ -31,7 +31,7 @@ import (
 	"vibe-go/pkg/warp"
 )
 
-const AppVersion = "v1.1.0"
+const AppVersion = "v1.1.1"
 
 //go:embed assets/core/sing-box.exe assets/core/wintun.dll
 var embeddedCore embed.FS
@@ -47,13 +47,34 @@ type App struct {
 	vpnMu        sync.Mutex
 }
 
+func findNodeByID(nodes []models.Node, id string) *models.Node {
+	if len(nodes) == 0 {
+		return nil
+	}
+	for i := range nodes {
+		if nodes[i].ID == id {
+			return &nodes[i]
+		}
+	}
+	if id != "" {
+		for i := range nodes {
+			if strings.HasPrefix(nodes[i].ID, id) || strings.HasPrefix(id, nodes[i].ID) {
+				return &nodes[i]
+			}
+		}
+	}
+	return nil
+}
+
 func NewApp() *App {
 	s := storage.NewStorage()
 	settings := s.LoadSettings()
 	activeID := settings.ActiveNodeID
 
 	nodes := s.LoadNodes()
-	if activeID == "" && len(nodes) > 0 {
+	if n := findNodeByID(nodes, activeID); n != nil {
+		activeID = n.ID
+	} else if len(nodes) > 0 {
 		activeID = nodes[0].ID
 	}
 
@@ -109,7 +130,11 @@ func (a *App) unpackEmbeddedCore() {
 }
 
 func (a *App) domReady(ctx context.Context) {
-	// Ready hook
+	// Trim startup peaks after WebView2 finishes initial script compilation and asset loading
+	go func() {
+		time.Sleep(3 * time.Second)
+		procmon.TrimMemory()
+	}()
 }
 
 func (a *App) shutdown(ctx context.Context) {
@@ -125,6 +150,10 @@ func (a *App) shutdown(ctx context.Context) {
 func (a *App) WindowMin() {
 	if a.ctx != nil {
 		runtime.WindowMinimise(a.ctx)
+		go func() {
+			time.Sleep(350 * time.Millisecond)
+			procmon.TrimMemory()
+		}()
 	}
 }
 
@@ -141,6 +170,10 @@ func (a *App) WindowClose() {
 	settings := a.storage.LoadSettings()
 	if settings.MinimizeToTray {
 		runtime.WindowHide(a.ctx)
+		go func() {
+			time.Sleep(300 * time.Millisecond)
+			procmon.TrimMemory()
+		}()
 	} else {
 		runtime.Quit(a.ctx)
 	}
@@ -1030,13 +1063,10 @@ func (a *App) GetTrafficStats() models.TrafficStats {
 	a.mu.RUnlock()
 
 	nodes := a.storage.LoadNodes()
-	for _, n := range nodes {
-		if n.ID == curID {
-			nodeName = n.Name
-			serverIP = n.Server
-			ping = n.Ping
-			break
-		}
+	if n := findNodeByID(nodes, curID); n != nil {
+		nodeName = n.Name
+		serverIP = n.Server
+		ping = n.Ping
 	}
 
 	modeStr := "Белый список"
@@ -1338,11 +1368,13 @@ func (a *App) TestWebLatency() map[string]interface{} {
 		a.mu.RUnlock()
 		if curID != "" {
 			nodes := a.storage.LoadNodes()
-			for i := range nodes {
-				if nodes[i].ID == curID {
-					nodes[i].Ping = latency
-					_ = a.storage.SaveNodes(nodes)
-					break
+			if n := findNodeByID(nodes, curID); n != nil {
+				for i := range nodes {
+					if nodes[i].ID == n.ID {
+						nodes[i].Ping = latency
+						_ = a.storage.SaveNodes(nodes)
+						break
+					}
 				}
 			}
 		}

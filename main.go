@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"syscall"
 	"unsafe"
@@ -97,6 +98,19 @@ func elevateProcess() bool {
 }
 
 func main() {
+	// Tune Go GC for desktop utility footprint
+	debug.SetMemoryLimit(64 * 1024 * 1024)
+	debug.SetGCPercent(50)
+
+	// Optimize WebView2/Chromium memory footprint (single renderer process, disable unneeded browser features)
+	existingArgs := os.Getenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGS")
+	optArgs := "--renderer-process-limit=1 --disable-features=Translate,OptimizationHints,MediaRouter,CalculateNativeWinOcclusion --disable-background-networking --disable-component-update"
+	if existingArgs == "" {
+		os.Setenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGS", optArgs)
+	} else if !strings.Contains(existingArgs, "--renderer-process-limit") {
+		os.Setenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGS", existingArgs+" "+optArgs)
+	}
+
 	if !checkSingleInstanceMutex() {
 		os.Exit(0)
 	}

@@ -422,13 +422,30 @@ document.getElementById('btn-win-max').addEventListener('click', () => WindowTog
 document.getElementById('btn-win-close').addEventListener('click', () => WindowClose());
 
 // Navigation
+const PAGE_ORDER = ['dash', 'routing', 'nodes', 'traffic', 'settings'];
+
 function switchPage(pageName) {
+  const prevPage = state.activePage;
+  const prevIdx = PAGE_ORDER.indexOf(prevPage);
+  const nextIdx = PAGE_ORDER.indexOf(pageName);
+
+  let animClass = 'fade-in';
+  if (prevIdx !== -1 && nextIdx !== -1 && prevIdx !== nextIdx) {
+    animClass = nextIdx > prevIdx ? 'slide-forward' : 'slide-backward';
+  }
+
   state.activePage = pageName;
   document.querySelectorAll('.nav-item').forEach(item => {
     item.classList.toggle('active', item.dataset.page === pageName);
   });
   document.querySelectorAll('.page').forEach(page => {
-    page.classList.toggle('active', page.id === `page-${pageName}`);
+    const isTarget = page.id === `page-${pageName}`;
+    page.classList.remove('slide-forward', 'slide-backward', 'fade-in');
+    page.classList.toggle('active', isTarget);
+    if (isTarget) {
+      void page.offsetWidth;
+      page.classList.add(animClass);
+    }
   });
 
   if (pageName === 'routing') {
@@ -847,7 +864,7 @@ document.getElementById('btn-kill-conflicts')?.addEventListener('click', async (
 const btnPower = document.getElementById('btn-power');
 btnPower.addEventListener('click', async () => {
   try {
-    btnPower.style.opacity = '0.5';
+    btnPower.classList.add('connecting');
     btnPower.style.pointerEvents = 'none';
 
     const willConnect = !state.isConnected;
@@ -866,20 +883,28 @@ btnPower.addEventListener('click', async () => {
     showToast(`Ошибка: ${err}`);
     document.getElementById('btn-hero-logs')?.classList.add('has-error');
   } finally {
-    btnPower.style.opacity = '1';
+    btnPower.classList.remove('connecting');
     btnPower.style.pointerEvents = 'auto';
     setTimeout(pollTelemetry, 400);
   }
 });
 
+let lastConnectedState = null;
 function updateStatusUI() {
   const dot = document.getElementById('hero-status-dot');
   const titleBadge = document.getElementById('title-status-badge');
   const heroText = document.getElementById('hero-status-text');
 
+  const justConnected = (lastConnectedState === false && state.isConnected === true);
+  lastConnectedState = state.isConnected;
+
   if (state.isConnected) {
     dot.classList.add('connected');
     btnPower.classList.add('connected');
+    if (justConnected) {
+      btnPower.classList.add('snap-connect');
+      setTimeout(() => btnPower.classList.remove('snap-connect'), 500);
+    }
     titleBadge.classList.add('connected');
     titleBadge.innerText = t('status_connected');
     heroText.innerText = t('status_connected');
@@ -928,6 +953,8 @@ async function pollTelemetry() {
   }
 }
 
+let currentGraphScale = 1024 * 1024; // 1 MB/s baseline scale floor
+
 function drawCanvasGraph() {
   const canvas = document.getElementById('speed-canvas');
   if (!canvas) return;
@@ -947,9 +974,14 @@ function drawCanvasGraph() {
   const paddingBottom = 8;
   const usableH = h - paddingBottom - 10;
 
-  const maxDown = Math.max(...state.speedHistory.down, 1024 * 50);
-  const maxUp = Math.max(...state.speedHistory.up, 1024 * 50);
-  const maxVal = Math.max(maxDown, maxUp);
+  const peakSpeed = Math.max(...state.speedHistory.down, ...state.speedHistory.up);
+  const targetScale = Math.max(peakSpeed * 1.2, 1024 * 1024); // at least 1 MB/s ceiling with 20% headroom
+  if (targetScale > currentGraphScale) {
+    currentGraphScale = targetScale;
+  } else {
+    currentGraphScale += (targetScale - currentGraphScale) * 0.12;
+  }
+  const maxVal = currentGraphScale;
 
   const pointsCount = state.speedHistory.down.length;
   const step = w / (pointsCount - 1);
