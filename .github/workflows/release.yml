@@ -41,11 +41,16 @@ jobs:
         run: |
           wails build -platform windows/amd64
 
-      - name: Prepare Binary
+      - name: Prepare Binary and Notes
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
           Copy-Item "build/bin/VPN.exe" -Destination "VibeVPN-${tag}-Windows-x64.exe"
+          $msg = git tag -l --format='%(contents)' $tag
+          if (-not $msg -or $msg.Trim() -eq "") {
+            $msg = git log -1 --pretty=%B
+          }
+          [System.IO.File]::WriteAllText("release_notes.md", $msg.Trim(), [System.Text.Encoding]::UTF8)
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -56,4 +61,5 @@ jobs:
           name: ${{ github.ref_name }}
           draft: false
           prerelease: false
-          generate_release_notes: true
+          body_path: release_notes.md
+          generate_release_notes: false
