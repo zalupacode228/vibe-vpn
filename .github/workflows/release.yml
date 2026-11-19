@@ -57,7 +57,6 @@ jobs:
         with:
           files: |
             VibeVPN-${{ github.ref_name }}-Windows-x64.exe
-            build/bin/VPN.exe
           name: ${{ github.ref_name }}
           draft: false
           prerelease: false
