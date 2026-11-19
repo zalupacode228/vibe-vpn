@@ -45,6 +45,7 @@ func activateExistingWindow() {
 	wTitle, _ := syscall.UTF16PtrFromString("VPN")
 	hwnd, _, _ := procFindWindowW.Call(0, uintptr(unsafe.Pointer(wTitle)))
 	if hwnd != 0 {
+		procShowWindow.Call(hwnd, 5) // SW_SHOW
 		procShowWindow.Call(hwnd, 9) // SW_RESTORE
 		procSetForegroundWindow.Call(hwnd)
 	}
@@ -115,11 +116,14 @@ func main() {
 		os.Exit(0)
 	}
 
+	isAutoStart := false
 	noElevate := false
 	for _, a := range os.Args {
 		if a == "--no-elevate" {
 			noElevate = true
-			break
+		}
+		if a == "--autostart" || a == "--minimized" {
+			isAutoStart = true
 		}
 	}
 
@@ -160,6 +164,7 @@ func main() {
 		MinHeight:        600,
 		Frameless:         true,
 		HideWindowOnClose: true,
+		StartHidden:       isAutoStart,
 		BackgroundColour:  &options.RGBA{R: 20, G: 18, B: 24, A: 255},
 		AssetServer: &assetserver.Options{
 			Assets: assets,

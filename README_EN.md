@@ -7,7 +7,7 @@
 </p>
 
 ![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011%20x64-0078D6?logo=windows&logoColor=white)
-![Version](https://img.shields.io/badge/Version-v1.1.1-brightgreen.svg)
+![Version](https://img.shields.io/badge/Version-v1.1.2-brightgreen.svg)
 ![Go](https://img.shields.io/badge/Go-1.23%2B-00ADD8?logo=go&logoColor=white)
 ![Wails](https://img.shields.io/badge/Wails-v2-DF0000?logo=wails&logoColor=white)
 ![Sing-Box](https://img.shields.io/badge/Core-sing--box%201.14-FF6B00?logo=box&logoColor=white)
@@ -16,7 +16,7 @@
 
 **A fast, modern, and lightweight Windows VPN client featuring per-application Split Tunneling, Cloudflare WARP (AmneziaWG / MASQUE) generator and config import, WARP Detour chained proxying, smart domain & IP/CIDR geo-routing, real-time connection log viewer, and network noise filtering.**
 
-[Download Release v1.1.1 (.exe)](https://github.com/zalupacode228/vibe-vpn/releases/tag/v1.1.1) • [Key Features](#-key-features) • [Screenshots](#-screenshots) • [Building from Source](#-building-from-source)
+[Download Release v1.1.2 (.exe)](https://github.com/zalupacode228/vibe-vpn/releases/tag/v1.1.2) • [Key Features](#-key-features) • [Screenshots](#-screenshots) • [Building from Source](#-building-from-source)
 
 </div>
 
@@ -60,7 +60,7 @@
 ## 🚀 Download & Installation
 
 1. Go to the [Releases](https://github.com/zalupacode228/vibe-vpn/releases/latest) page.
-2. Download the latest `VibeVPN-v1.1.1-Windows-x64.exe` (or `VPN.exe`).
+2. Download the latest `VibeVPN-v1.1.2-Windows-x64.exe` (or `VPN.exe`).
 3. Run the executable.
    > **Note**: Requires Windows 10 or 11 (64-bit). Administrator privileges are required to create the TUN network adapter (`wintun.dll`).
 

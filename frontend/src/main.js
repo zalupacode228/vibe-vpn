@@ -2604,6 +2604,79 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
   }
 });
 
+// Instant auto-save for settings toggles
+document.getElementById('set-autostart')?.addEventListener('change', async (e) => {
+  const val = e.target.checked;
+  state.settings.auto_start = val;
+  try {
+    await ToggleSmartRule('auto_start', val);
+    showToast(val ? t('toast_autostart_on') : t('toast_autostart_off'));
+  } catch (err) {
+    showToast(`${t('settings_error_save', 'Ошибка сохранения')}: ${err}`);
+  }
+});
+
+document.getElementById('set-minimize-tray')?.addEventListener('change', async (e) => {
+  const val = e.target.checked;
+  state.settings.minimize_to_tray = val;
+  try {
+    await ToggleSmartRule('minimize_to_tray', val);
+  } catch (err) {
+    showToast(`${t('settings_error_save', 'Ошибка сохранения')}: ${err}`);
+  }
+});
+
+document.getElementById('set-killswitch')?.addEventListener('change', async (e) => {
+  const val = e.target.checked;
+  state.settings.kill_switch = val;
+  try {
+    await ToggleSmartRule('kill_switch', val);
+  } catch (err) {
+    showToast(`${t('settings_error_save', 'Ошибка сохранения')}: ${err}`);
+  }
+});
+
+document.getElementById('set-warp-detour')?.addEventListener('change', async (e) => {
+  const val = e.target.checked;
+  state.settings.warp_detour = val;
+  try {
+    await ToggleSmartRule('warp_detour', val);
+    updateWarpHeroBadge();
+  } catch (err) {
+    showToast(`${t('settings_error_save', 'Ошибка сохранения')}: ${err}`);
+  }
+});
+
+document.getElementById('set-auto-subs')?.addEventListener('change', async (e) => {
+  const val = e.target.checked;
+  state.settings.auto_update_subs = val;
+  try {
+    await ToggleSmartRule('auto_update_subs', val);
+  } catch (err) {
+    showToast(`${t('settings_error_save', 'Ошибка сохранения')}: ${err}`);
+  }
+});
+
+document.getElementById('set-bypass-lan')?.addEventListener('change', async (e) => {
+  const val = e.target.checked;
+  state.settings.bypass_lan = val;
+  try {
+    await ToggleSmartRule('bypass_lan', val);
+  } catch (err) {
+    showToast(`${t('settings_error_save', 'Ошибка сохранения')}: ${err}`);
+  }
+});
+
+document.getElementById('set-strict-route')?.addEventListener('change', async (e) => {
+  const val = e.target.checked;
+  state.settings.strict_route = val;
+  try {
+    await ToggleSmartRule('strict_route', val);
+  } catch (err) {
+    showToast(`${t('settings_error_save', 'Ошибка сохранения')}: ${err}`);
+  }
+});
+
 function updateHeroNodeDisplay() {
   const nodes = state.nodes || [];
   const heroFlagEl = document.getElementById('hero-country-flag');

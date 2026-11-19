@@ -21,6 +21,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
+	"vibe-go/pkg/autostart"
 	"vibe-go/pkg/models"
 	"vibe-go/pkg/pinger"
 	"vibe-go/pkg/procmon"
@@ -31,7 +32,7 @@ import (
 	"vibe-go/pkg/warp"
 )
 
-const AppVersion = "v1.1.1"
+const AppVersion = "v1.1.2"
 
 //go:embed assets/core/sing-box.exe assets/core/wintun.dll
 var embeddedCore embed.FS
@@ -91,6 +92,10 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.unpackEmbeddedCore()
+	settings := a.storage.LoadSettings()
+	if settings.AutoStart {
+		_ = autostart.Enable()
+	}
 	t, err := tray.InitTray("VPN", func() {
 		if a.ctx != nil {
 			runtime.WindowShow(a.ctx)
@@ -200,6 +205,9 @@ func (a *App) GetSettings() models.Settings {
 	a.mu.RLock()
 	s.ActiveNodeID = a.activeNodeID
 	a.mu.RUnlock()
+	if autostart.IsEnabled() {
+		s.AutoStart = true
+	}
 	return s
 }
 
@@ -211,6 +219,12 @@ func (a *App) SaveSettings(settings models.Settings) error {
 		settings.ActiveNodeID = a.activeNodeID
 	}
 	a.mu.Unlock()
+
+	oldSettings := a.storage.LoadSettings()
+	if oldSettings.AutoStart != settings.AutoStart {
+		_ = autostart.Sync(settings.AutoStart)
+	}
+
 	return a.storage.SaveSettings(settings)
 }
 
@@ -708,12 +722,19 @@ func (a *App) ToggleSmartRule(key string, val bool) error {
 		s.PrivacyBlur = val
 	case "auto_start":
 		s.AutoStart = val
+		_ = autostart.Sync(val)
 	case "minimize_to_tray":
 		s.MinimizeToTray = val
 	case "strict_route":
 		s.StrictRoute = val
 	case "bypass_lan":
 		s.BypassLAN = val
+	case "kill_switch":
+		s.KillSwitch = val
+	case "warp_detour":
+		s.WarpDetour = val
+	case "auto_update_subs":
+		s.AutoUpdateSubs = val
 	default:
 		// Fallback for any other boolean key
 	}

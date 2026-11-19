@@ -259,6 +259,8 @@ export const translations = {
 
     // Toasts
     toast_settings_saved: 'Настройки успешно сохранены',
+    toast_autostart_on: 'Автозапуск при входе в Windows включен',
+    toast_autostart_off: 'Автозапуск при входе в Windows отключен',
     toast_node_added: 'Узел успешно добавлен',
     toast_node_deleted: 'Узел удален',
     toast_sub_added: 'Подписка успешно добавлена',
@@ -548,6 +550,8 @@ export const translations = {
 
     // Toasts
     toast_settings_saved: 'Settings saved successfully',
+    toast_autostart_on: 'Start with Windows enabled',
+    toast_autostart_off: 'Start with Windows disabled',
     toast_node_added: 'Node added successfully',
     toast_node_deleted: 'Node deleted',
     toast_sub_added: 'Subscription added successfully',
