@@ -32,7 +32,7 @@ import (
 	"vibe-go/pkg/warp"
 )
 
-const AppVersion = "v1.1.2"
+const AppVersion = "v1.1.3"
 
 //go:embed assets/core/sing-box.exe assets/core/wintun.dll
 var embeddedCore embed.FS
@@ -119,18 +119,36 @@ func (a *App) unpackEmbeddedCore() {
 	coreDir := filepath.Join(appData, "core")
 	_ = os.MkdirAll(coreDir, 0755)
 
-	singboxDst := filepath.Join(coreDir, "sing-box.exe")
-	if info, err := os.Stat(singboxDst); err != nil || info.Size() == 0 {
-		if data, err := embeddedCore.ReadFile("assets/core/sing-box.exe"); err == nil {
-			_ = os.WriteFile(singboxDst, data, 0755)
+	versionFile := filepath.Join(coreDir, ".core_version")
+	verBytes, _ := os.ReadFile(versionFile)
+	versionMismatch := strings.TrimSpace(string(verBytes)) != AppVersion
+
+	unpackIfChanged := func(srcPath, dstPath string, perm os.FileMode) {
+		f, err := embeddedCore.Open(srcPath)
+		if err != nil {
+			return
+		}
+		srcInfo, err := f.Stat()
+		f.Close()
+		if err != nil {
+			return
+		}
+
+		if !versionMismatch {
+			if dstInfo, err := os.Stat(dstPath); err == nil && dstInfo.Size() == srcInfo.Size() && dstInfo.Size() > 0 {
+				return
+			}
+		}
+
+		if data, err := embeddedCore.ReadFile(srcPath); err == nil {
+			_ = os.WriteFile(dstPath, data, perm)
 		}
 	}
 
-	wintunDst := filepath.Join(coreDir, "wintun.dll")
-	if info, err := os.Stat(wintunDst); err != nil || info.Size() == 0 {
-		if data, err := embeddedCore.ReadFile("assets/core/wintun.dll"); err == nil {
-			_ = os.WriteFile(wintunDst, data, 0644)
-		}
+	unpackIfChanged("assets/core/sing-box.exe", filepath.Join(coreDir, "sing-box.exe"), 0755)
+	unpackIfChanged("assets/core/wintun.dll", filepath.Join(coreDir, "wintun.dll"), 0644)
+	if versionMismatch {
+		_ = os.WriteFile(versionFile, []byte(AppVersion), 0644)
 	}
 }
 
@@ -527,14 +545,10 @@ func (a *App) RefreshAllSubscriptions() ([]models.Node, error) {
 	if len(subsList) == 0 {
 		return a.storage.LoadNodes(), nil
 	}
-	var lastNodes []models.Node
 	for _, s := range subsList {
-		nodes, err := a.RefreshSubscription(s.ID)
-		if err == nil {
-			lastNodes = nodes
-		}
+		_, _ = a.RefreshSubscription(s.ID)
 	}
-	return lastNodes, nil
+	return a.storage.LoadNodes(), nil
 }
 
 func (a *App) DeleteSubscription(id string) error {
@@ -1570,17 +1584,22 @@ func (a *App) ImportProfile() (string, error) {
 
 	if profile.Settings.SplitMode != "" {
 		_ = a.storage.SaveSettings(profile.Settings)
+		if profile.Settings.ActiveNodeID != "" {
+			a.mu.Lock()
+			a.activeNodeID = profile.Settings.ActiveNodeID
+			a.mu.Unlock()
+		}
 	}
-	if len(profile.Subscriptions) > 0 {
+	if profile.Subscriptions != nil {
 		_ = a.storage.SaveSubscriptions(profile.Subscriptions)
 	}
-	if len(profile.Nodes) > 0 {
+	if profile.Nodes != nil {
 		_ = a.storage.SaveNodes(profile.Nodes)
 	}
-	if len(profile.AppRules) > 0 {
+	if profile.AppRules != nil {
 		_ = a.storage.SaveRules(profile.AppRules)
 	}
-	if len(profile.CustomLists) > 0 {
+	if profile.CustomLists != nil {
 		_ = a.storage.SaveCustomLists(profile.CustomLists)
 	}
 

@@ -215,3 +215,73 @@ func TestGenerateConfigDirectDNSLocal(t *testing.T) {
 		t.Fatalf("sing-box check failed with DirectDNS=local: %v\nOutput: %s\nConfig:\n%s", err, string(out), string(cfgBytes))
 	}
 }
+
+func TestGenerateConfigExtraProtocols(t *testing.T) {
+	b := NewConfigBuilder()
+	settings := models.Settings{
+		SplitMode: "global",
+		BypassLAN: true,
+		MTU:       1400,
+	}
+
+	nodes := []models.Node{
+		{
+			ID:         "ss-test",
+			Name:       "Test SS",
+			Protocol:   "ss",
+			Server:     "1.1.1.1",
+			Port:       8388,
+			Encryption: "aes-256-gcm",
+			Password:   "secret",
+		},
+		{
+			ID:          "trojan-ws-test",
+			Name:        "Test Trojan WS",
+			Protocol:    "trojan",
+			Server:      "1.1.1.1",
+			Port:        443,
+			Password:    "secret",
+			SNI:         "example.com",
+			Network:     "ws",
+			Path:        "/ws",
+			Host:        "cdn.example.com",
+			Fingerprint: "chrome",
+		},
+		{
+			ID:          "vmess-grpc-test",
+			Name:        "Test VMess gRPC",
+			Protocol:    "vmess",
+			Server:      "1.1.1.1",
+			Port:        443,
+			UUID:        "00000000-0000-0000-0000-000000000000",
+			Encryption:  "auto",
+			Security:    "tls",
+			SNI:         "example.com",
+			Network:     "grpc",
+			ServiceName: "grpc-svc",
+		},
+	}
+
+	appData := os.Getenv("APPDATA")
+	sbPath := filepath.Join(appData, "VPN", "core", "sing-box.exe")
+	_, sbErr := os.Stat(sbPath)
+
+	for _, n := range nodes {
+		nodeCopy := n
+		cfgBytes, err := b.GenerateConfig("global", nil, &nodeCopy, settings)
+		if err != nil {
+			t.Fatalf("GenerateConfig error for %s: %v", n.ID, err)
+		}
+		if sbErr == nil {
+			tmpFile := filepath.Join(os.TempDir(), "test_"+n.ID+".json")
+			if err := os.WriteFile(tmpFile, cfgBytes, 0644); err != nil {
+				t.Fatalf("Failed to write tmp file: %v", err)
+			}
+			out, err := exec.Command(sbPath, "check", "-c", tmpFile).CombinedOutput()
+			os.Remove(tmpFile)
+			if err != nil {
+				t.Fatalf("sing-box check failed for %s: %v\nOutput: %s\nConfig:\n%s", n.ID, err, string(out), string(cfgBytes))
+			}
+		}
+	}
+}

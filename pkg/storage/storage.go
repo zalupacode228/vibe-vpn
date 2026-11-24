@@ -123,12 +123,8 @@ func (s *Storage) SaveSettings(settings models.Settings) error {
 	existing["bypass_ru"] = settings.BypassRU
 	existing["adblock"] = settings.AdBlock
 	existing["mtu"] = settings.MTU
-	if settings.RemoteDNS != "" {
-		existing["remote_dns"] = settings.RemoteDNS
-	}
-	if settings.DirectDNS != "" {
-		existing["direct_dns"] = settings.DirectDNS
-	}
+	existing["remote_dns"] = settings.RemoteDNS
+	existing["direct_dns"] = settings.DirectDNS
 	existing["user_agent"] = settings.UserAgent
 	existing["hwid"] = settings.HWID
 	existing["kill_switch"] = settings.KillSwitch

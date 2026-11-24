@@ -305,37 +305,43 @@ func (b *ConfigBuilder) GenerateConfig(
 			if node.Encryption != "" {
 				proxyOut["encryption"] = node.Encryption
 			}
-			tlsMap := map[string]interface{}{
-				"enabled": true,
+			proxyOut["tls"] = buildTLSMap(node, serverSNI, true)
+			if trans := buildTransportMap(node); trans != nil {
+				proxyOut["transport"] = trans
 			}
-			if serverSNI != "" {
-				tlsMap["server_name"] = serverSNI
+		} else if nodeType == "trojan" {
+			if node.Password != "" {
+				proxyOut["password"] = node.Password
 			}
-			if node.Fingerprint != "" {
-				tlsMap["utls"] = map[string]interface{}{
-					"enabled":     true,
-					"fingerprint": node.Fingerprint,
-				}
+			proxyOut["tls"] = buildTLSMap(node, serverSNI, true)
+			if trans := buildTransportMap(node); trans != nil {
+				proxyOut["transport"] = trans
 			}
-			if node.Security == "reality" {
-				tlsMap["reality"] = map[string]interface{}{
-					"enabled":    true,
-					"public_key": node.PublicKey,
-					"short_id":   node.ShortID,
-				}
+		} else if nodeType == "vmess" {
+			if node.UUID != "" {
+				proxyOut["uuid"] = node.UUID
 			}
-			proxyOut["tls"] = tlsMap
-
-			if node.Network != "" && node.Network != "tcp" {
-				transMap := map[string]interface{}{
-					"type": node.Network,
-					"path": node.Path,
-					"host": node.Host,
-				}
-				if node.Mode != "" {
-					transMap["mode"] = node.Mode
-				}
-				proxyOut["transport"] = transMap
+			sec := node.Encryption
+			if sec == "" {
+				sec = "auto"
+			}
+			proxyOut["security"] = sec
+			proxyOut["alter_id"] = 0
+			if node.Security == "tls" {
+				proxyOut["tls"] = buildTLSMap(node, serverSNI, true)
+			}
+			if trans := buildTransportMap(node); trans != nil {
+				proxyOut["transport"] = trans
+			}
+		} else if nodeType == "ss" || nodeType == "shadowsocks" {
+			proxyOut["type"] = "shadowsocks"
+			method := node.Encryption
+			if method == "" {
+				method = "aes-256-gcm"
+			}
+			proxyOut["method"] = method
+			if node.Password != "" {
+				proxyOut["password"] = node.Password
 			}
 		} else if nodeType == "hysteria2" || nodeType == "hy2" {
 			proxyOut["type"] = "hysteria2"
@@ -348,19 +354,7 @@ func (b *ConfigBuilder) GenerateConfig(
 					"password": node.ObfsPassword,
 				}
 			}
-			tlsMap := map[string]interface{}{
-				"enabled": true,
-			}
-			if serverSNI != "" {
-				tlsMap["server_name"] = serverSNI
-			}
-			if node.Insecure {
-				tlsMap["insecure"] = true
-			}
-			if len(node.ALPN) > 0 {
-				tlsMap["alpn"] = node.ALPN
-			}
-			proxyOut["tls"] = tlsMap
+			proxyOut["tls"] = buildTLSMap(node, serverSNI, true)
 		}
 	}
 
@@ -728,6 +722,82 @@ func (b *ConfigBuilder) GenerateConfig(
 	}
 
 	return json.MarshalIndent(config, "", "  ")
+}
+
+func buildTLSMap(node *models.Node, serverSNI string, enabled bool) map[string]interface{} {
+	tlsMap := map[string]interface{}{
+		"enabled": enabled,
+	}
+	if serverSNI != "" {
+		tlsMap["server_name"] = serverSNI
+	}
+	if node.Insecure {
+		tlsMap["insecure"] = true
+	}
+	if len(node.ALPN) > 0 {
+		tlsMap["alpn"] = node.ALPN
+	}
+	if node.Fingerprint != "" {
+		tlsMap["utls"] = map[string]interface{}{
+			"enabled":     true,
+			"fingerprint": node.Fingerprint,
+		}
+	}
+	if node.Security == "reality" {
+		tlsMap["reality"] = map[string]interface{}{
+			"enabled":    true,
+			"public_key": node.PublicKey,
+			"short_id":   node.ShortID,
+		}
+	}
+	return tlsMap
+}
+
+func buildTransportMap(node *models.Node) map[string]interface{} {
+	netType := strings.ToLower(strings.TrimSpace(node.Network))
+	if netType == "" || netType == "tcp" {
+		return nil
+	}
+	transMap := map[string]interface{}{
+		"type": netType,
+	}
+	switch netType {
+	case "ws":
+		if node.Path != "" {
+			transMap["path"] = node.Path
+		}
+		if node.Host != "" {
+			transMap["headers"] = map[string]string{
+				"Host": node.Host,
+			}
+		}
+	case "grpc":
+		sn := node.ServiceName
+		if sn == "" {
+			sn = node.Path
+		}
+		if sn != "" {
+			transMap["service_name"] = sn
+		}
+	case "httpupgrade":
+		if node.Path != "" {
+			transMap["path"] = node.Path
+		}
+		if node.Host != "" {
+			transMap["host"] = node.Host
+		}
+	default:
+		if node.Path != "" {
+			transMap["path"] = node.Path
+		}
+		if node.Host != "" {
+			transMap["host"] = node.Host
+		}
+		if node.Mode != "" {
+			transMap["mode"] = node.Mode
+		}
+	}
+	return transMap
 }
 
 func contains(arr []string, val string) bool {

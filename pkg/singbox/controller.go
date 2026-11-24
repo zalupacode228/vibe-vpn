@@ -24,6 +24,7 @@ type Controller struct {
 	configPath  string
 	cmd         *exec.Cmd
 	logFile     *os.File
+	httpClient  *http.Client
 	isRunning   bool
 	status      string
 	downSpeed   int64
@@ -37,6 +38,7 @@ func NewController() *Controller {
 	return &Controller{
 		corePath:   resolveCorePath(),
 		configPath: filepath.Join(os.Getenv("APPDATA"), "VPN", "config.json"),
+		httpClient: &http.Client{Timeout: 3 * time.Second},
 		status:     "Отключено",
 	}
 }
@@ -133,6 +135,15 @@ func (c *Controller) Start(configBytes []byte) error {
 		c.mu.Lock()
 		defer c.mu.Unlock()
 		if c.isRunning && c.cmd == cmd {
+			if c.stopTraffic != nil {
+				close(c.stopTraffic)
+				c.stopTraffic = nil
+			}
+			if c.logFile != nil {
+				c.logFile.Close()
+				c.logFile = nil
+			}
+			c.cmd = nil
 			c.isRunning = false
 			c.status = "Отключено"
 			c.downSpeed = 0
@@ -202,7 +213,10 @@ func (c *Controller) GetStatus() (bool, string, int64, int64, int64, int64) {
 }
 
 func (c *Controller) pollTraffic(stop chan struct{}) {
-	client := &http.Client{Timeout: 3 * time.Second}
+	client := c.httpClient
+	if client == nil {
+		client = &http.Client{Timeout: 3 * time.Second}
+	}
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
@@ -255,7 +269,10 @@ func formatBytesPretty(b int64) string {
 }
 
 func (c *Controller) GetConnections() ([]models.ConnectionGroup, error) {
-	client := &http.Client{Timeout: 2 * time.Second}
+	client := c.httpClient
+	if client == nil {
+		client = &http.Client{Timeout: 2 * time.Second}
+	}
 	req, err := http.NewRequest("GET", "http://127.0.0.1:9090/connections", nil)
 	if err != nil {
 		return []models.ConnectionGroup{}, err

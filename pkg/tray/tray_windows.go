@@ -36,6 +36,7 @@ var (
 )
 
 const (
+	WM_NULL          = 0x0000
 	WM_USER          = 0x0400
 	WM_TRAYICON      = WM_USER + 100
 	WM_COMMAND       = 0x0111
@@ -141,6 +142,7 @@ func wndProc(hWnd uintptr, msg uint32, wParam uintptr, lParam uintptr) uintptr {
 
 			procSetForeground.Call(hWnd)
 			procTrackPopupMenu.Call(hMenu, TPM_RIGHTBUTTON, uintptr(pt.X), uintptr(pt.Y), 0, hWnd, 0)
+			procPostMessageW.Call(hWnd, WM_NULL, 0, 0)
 			procDestroyMenu.Call(hMenu)
 		}
 		return 0
