@@ -1129,6 +1129,7 @@ function renderAppList() {
 
       try {
         await ToggleAppRule(app.path, app.name, checked);
+        scheduleRulesReload();
       } catch (err) {
         showToast(`Ошибка правила: ${err}`);
       }
@@ -1136,6 +1137,20 @@ function renderAppList() {
 
     listEl.appendChild(item);
   });
+}
+
+// Running sing-box keeps the old config, so app rule changes need a tunnel restart (debounced for quick toggling)
+let rulesReloadTimer = null;
+function scheduleRulesReload() {
+  clearTimeout(rulesReloadTimer);
+  rulesReloadTimer = setTimeout(async () => {
+    if (!state.isConnected) return;
+    try {
+      await ToggleVPN(true);
+    } catch (e) {
+      console.warn('Hot reload rules error:', e);
+    }
+  }, 800);
 }
 
 document.getElementById('input-search-apps').addEventListener('input', (e) => {

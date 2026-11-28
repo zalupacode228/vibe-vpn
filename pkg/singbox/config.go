@@ -35,9 +35,15 @@ var appHelpers = map[string][]string{
 	"chrome.exe":   {"elevation_service.exe", "notification_helper.exe"},
 	"msedge.exe":   {"msedgewebview2.exe", "identity_helper.exe"},
 	"telegram.exe": {"updater.exe"},
-	"discord.exe":  {"update.exe"},
+	"discord.exe":  {"Update.exe"}, // sing-box matches process_name case-sensitively
 	"steam.exe":    {"steamservice.exe", "steamwebhelper.exe"},
 	"spotify.exe":  {"spotifywebhelper.exe"},
+}
+
+// Domains sent to the proxy in whitelist mode when the app is selected, so the app still
+// works when its traffic is not matched by process (sockets opened before the restart, helpers).
+var appDomains = map[string][]string{
+	"discord.exe": {"discord.com", "discordapp.com", "discord.gg", "discord.media", "discordapp.net", "discord.co", "discordcdn.com"},
 }
 
 type ConfigBuilder struct {
@@ -511,6 +517,17 @@ func (b *ConfigBuilder) GenerateConfig(
 				entry["process_path"] = processPaths
 			}
 			routeRules = append(routeRules, entry)
+		}
+		var domains []string
+		for _, pn := range rawNames {
+			domains = append(domains, appDomains[strings.ToLower(pn)]...)
+		}
+		if len(domains) > 0 {
+			routeRules = append(routeRules, map[string]interface{}{
+				"action":        "route",
+				"domain_suffix": domains,
+				"outbound":      targetOutbound,
+			})
 		}
 		routeRules = append(routeRules, map[string]interface{}{
 			"action":   "route",

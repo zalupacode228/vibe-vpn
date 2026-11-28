@@ -1,6 +1,7 @@
 package singbox
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -283,5 +284,43 @@ func TestGenerateConfigExtraProtocols(t *testing.T) {
 				t.Fatalf("sing-box check failed for %s: %v\nOutput: %s\nConfig:\n%s", n.ID, err, string(out), string(cfgBytes))
 			}
 		}
+	}
+}
+
+func TestWhitelistDiscordRouting(t *testing.T) {
+	b := NewConfigBuilder()
+	node := &models.Node{Protocol: "vless", Server: "1.1.1.1", Port: 443, UUID: "00000000-0000-0000-0000-000000000000"}
+	rules := []models.AppRule{{Name: "Discord.exe", Enabled: true}}
+	cfgBytes, err := b.GenerateConfig("whitelist", rules, node, models.Settings{SplitMode: "whitelist"})
+	if err != nil {
+		t.Fatalf("GenerateConfig error: %v", err)
+	}
+	var cfg struct {
+		Route struct {
+			Rules []struct {
+				Outbound     string   `json:"outbound"`
+				ProcessName  []string `json:"process_name"`
+				DomainSuffix []string `json:"domain_suffix"`
+			} `json:"rules"`
+		} `json:"route"`
+	}
+	if err := json.Unmarshal(cfgBytes, &cfg); err != nil {
+		t.Fatal(err)
+	}
+	var gotProc, gotUpdate, gotDomain bool
+	for _, r := range cfg.Route.Rules {
+		if r.Outbound != "proxy-out" {
+			continue
+		}
+		for _, p := range r.ProcessName {
+			gotProc = gotProc || p == "Discord.exe"
+			gotUpdate = gotUpdate || p == "Update.exe"
+		}
+		for _, d := range r.DomainSuffix {
+			gotDomain = gotDomain || d == "discord.com"
+		}
+	}
+	if !gotProc || !gotUpdate || !gotDomain {
+		t.Fatalf("discord routing incomplete: proc=%v update=%v domain=%v", gotProc, gotUpdate, gotDomain)
 	}
 }
