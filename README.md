@@ -7,7 +7,7 @@
 </p>
 
 ![Platform](https://img.shields.io/badge/Платформа-Windows%2010%20%2F%2011%20x64-0078D6?logo=windows&logoColor=white)
-![Version](https://img.shields.io/badge/Версия-v1.1.3-brightgreen.svg)
+![Version](https://img.shields.io/badge/Версия-v1.1.4-brightgreen.svg)
 ![Go](https://img.shields.io/badge/Go-1.23%2B-00ADD8?logo=go&logoColor=white)
 ![Wails](https://img.shields.io/badge/Wails-v2-DF0000?logo=wails&logoColor=white)
 ![Sing-Box](https://img.shields.io/badge/Ядро-sing--box%201.14-FF6B00?logo=box&logoColor=white)
@@ -16,7 +16,7 @@
 
 **Простой, красивый и быстрый VPN-клиент для Windows с разделением трафика по приложениям (Split Tunneling), генератором и импортом WARP (AmneziaWG), каскадным туннелированием WARP Detour, гео-маршрутизацией списков IP/доменов, живым журналом логов ядра и защитой от сетевого шума.**
 
-[Скачать релиз v1.1.3 (.exe)](https://github.com/zalupacode228/vibe-vpn/releases/tag/v1.1.3) • [Возможности](#-основные-возможности) • [Скриншоты](#-скриншоты-интерфейса) • [Сборка из исходников](#-сборка-из-исходников)
+[Скачать релиз v1.1.4 (.exe)](https://github.com/zalupacode228/vibe-vpn/releases/tag/v1.1.4) • [Возможности](#-основные-возможности) • [Скриншоты](#-скриншоты-интерфейса) • [Сборка из исходников](#-сборка-из-исходников)
 
 </div>
 
@@ -60,7 +60,7 @@
 ## 🚀 Скачивание и запуск
 
 1. Перейдите на страницу [Релизов](https://github.com/zalupacode228/vibe-vpn/releases/latest).
-2. Скачайте свежий файл `VibeVPN-v1.1.3-Windows-x64.exe` (или `VPN.exe`).
+2. Скачайте свежий файл `VibeVPN-v1.1.4-Windows-x64.exe` (или `VPN.exe`).
 3. Запустите приложение.
    > **Примечание**: Требуется Windows 10 или 11 (64-бит). Для создания виртуального сетевого адаптера (`wintun.dll`) требуются права администратора.
 
